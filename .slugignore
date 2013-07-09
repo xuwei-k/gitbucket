@@ -1,0 +1,13 @@
+/target/streams
+/target/resolution-cache
+/README
+/sbt.sh
+/sbt.bat
+/sbt-launch-0.13.5.jar
+/project/target
+/build.xml
+/LICENSE
+/contrib
+/embed-jetty
+/etc
+/src/test
