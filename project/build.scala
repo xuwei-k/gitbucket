@@ -4,6 +4,7 @@ import org.scalatra.sbt._
 import org.scalatra.sbt.PluginKeys._
 import twirl.sbt.TwirlPlugin._
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.EclipseKeys
+import com.typesafe.sbt.SbtStartScript
 
 object MyBuild extends Build {
   val Organization = "jp.sf.amateras"
@@ -34,10 +35,10 @@ object MyBuild extends Build {
         "com.typesafe.slick" %% "slick" % "1.0.1",
         "com.h2database" % "h2" % "1.3.171",
         "ch.qos.logback" % "logback-classic" % "1.0.6" % "runtime",
-        "org.eclipse.jetty" % "jetty-webapp" % "8.1.8.v20121106" % "container",
-        "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container;provided;test" artifacts (Artifact("javax.servlet", "jar", "jar"))
+        "org.eclipse.jetty" % "jetty-webapp" % "8.1.8.v20121106" % "compile;container",
+        "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile;container;provided;test" artifacts (Artifact("javax.servlet", "jar", "jar"))
       ),
       EclipseKeys.withSource := true
-    ) ++ seq(Twirl.settings: _*)
+    ) ++ Twirl.settings ++ SbtStartScript.startScriptForClassesSettings
   )
 }
