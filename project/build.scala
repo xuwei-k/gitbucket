@@ -5,6 +5,7 @@ import sbt._
 import sbtassembly.AssemblyKeys._
 import sbtassembly._
 import JettyPlugin.autoImport._
+import com.typesafe.sbt.SbtStartScript
 
 object MyBuild extends Build {
   val Organization = "gitbucket"
@@ -29,6 +30,7 @@ object MyBuild extends Build {
       case x => MergeStrategy.first
     }
   )
+  .settings(SbtStartScript.startScriptForClassesSettings: _*)
   .settings(
     sourcesInBase := false,
     organization := Organization,
@@ -45,7 +47,6 @@ object MyBuild extends Build {
       "org.eclipse.jgit" % "org.eclipse.jgit.http.server" % "3.4.2.201412180340-r",
       "org.eclipse.jgit" % "org.eclipse.jgit.archive" % "3.4.2.201412180340-r",
       "org.scalatra" %% "scalatra" % ScalatraVersion,
-      "org.scalatra" %% "scalatra-specs2" % ScalatraVersion % "test",
       "org.scalatra" %% "scalatra-json" % ScalatraVersion,
       "org.json4s" %% "json4s-jackson" % "3.2.11",
       "jp.sf.amateras" %% "scalatra-forms" % "0.2.0",
@@ -60,8 +61,8 @@ object MyBuild extends Build {
       "com.novell.ldap" % "jldap" % "2009-10-07",
       "com.h2database" % "h2" % "1.4.190",
       "ch.qos.logback" % "logback-classic" % "1.1.1",
-      "org.eclipse.jetty" % "jetty-webapp" % "8.1.16.v20140903" % "provided",
-      "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided",
+      "org.eclipse.jetty" % "jetty-webapp" % "8.1.16.v20140903" % "provided;compile",
+      "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
       "junit" % "junit" % "4.12" % "test",
       "com.mchange" % "c3p0" % "0.9.5.2",
       "com.typesafe" % "config" % "1.2.1",
