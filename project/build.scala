@@ -1,11 +1,9 @@
 import sbt._
 import Keys._
 import org.scalatra.sbt._
-import com.typesafe.sbteclipse.plugin.EclipsePlugin.EclipseKeys
+import com.typesafe.sbt.SbtStartScript
 import play.twirl.sbt.SbtTwirl
 import play.twirl.sbt.Import.TwirlKeys._
-import sbtassembly._
-import sbtassembly.AssemblyKeys._
 
 object MyBuild extends Build {
   val Organization = "gitbucket"
@@ -19,17 +17,7 @@ object MyBuild extends Build {
     file(".")
   )
   .settings(ScalatraPlugin.scalatraWithJRebel: _*)
-  .settings(
-    test in assembly := {},
-    assemblyMergeStrategy in assembly := {
-      case PathList("META-INF", xs @ _*) =>
-        (xs map {_.toLowerCase}) match {
-          case ("manifest.mf" :: Nil) => MergeStrategy.discard
-          case _ => MergeStrategy.discard
-      }
-      case x => MergeStrategy.first
-    }
-  )
+  .settings(SbtStartScript.startScriptForClassesSettings: _*)
   .settings(
     sourcesInBase := false,
     organization := Organization,
@@ -45,7 +33,6 @@ object MyBuild extends Build {
       "org.eclipse.jgit" % "org.eclipse.jgit.http.server" % "3.4.2.201412180340-r",
       "org.eclipse.jgit" % "org.eclipse.jgit.archive" % "3.4.2.201412180340-r",
       "org.scalatra" %% "scalatra" % ScalatraVersion,
-      "org.scalatra" %% "scalatra-specs2" % ScalatraVersion % "test",
       "org.scalatra" %% "scalatra-json" % ScalatraVersion,
       "org.json4s" %% "json4s-jackson" % "3.2.11",
       "jp.sf.amateras" %% "scalatra-forms" % "0.1.0",
@@ -59,16 +46,14 @@ object MyBuild extends Build {
       "com.novell.ldap" % "jldap" % "2009-10-07",
       "com.h2database" % "h2" % "1.4.180",
 //      "ch.qos.logback" % "logback-classic" % "1.0.13" % "runtime",
-      "org.eclipse.jetty" % "jetty-webapp" % "8.1.16.v20140903" % "container;provided",
-      "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container;provided;test" artifacts Artifact("javax.servlet", "jar", "jar"),
-      "junit" % "junit" % "4.12" % "test",
+      "org.eclipse.jetty" % "jetty-webapp" % "8.1.16.v20140903" % "container;compile",
+      "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container;compile" artifacts Artifact("javax.servlet", "jar", "jar"),
       "com.mchange" % "c3p0" % "0.9.5",
       "com.typesafe" % "config" % "1.2.1",
       "com.typesafe.akka" %% "akka-actor" % "2.3.10",
       "com.enragedginger" %% "akka-quartz-scheduler" % "1.3.0-akka-2.3.x"  exclude("c3p0","c3p0")
     ),
     play.twirl.sbt.Import.TwirlKeys.templateImports += "gitbucket.core._",
-    EclipseKeys.withSource := true,
     javacOptions in compile ++= Seq("-target", "7", "-source", "7"),
     testOptions in Test += Tests.Argument(TestFrameworks.Specs2, "junitxml", "console"),
     javaOptions in Test += "-Dgitbucket.home=target/gitbucket_home_for_test",
