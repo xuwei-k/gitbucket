@@ -5,7 +5,6 @@ import sbt._
 import sbtassembly.AssemblyKeys._
 import sbtassembly._
 import JettyPlugin.autoImport._
-import com.typesafe.sbt.SbtStartScript
 
 object MyBuild extends Build {
   val Organization = "gitbucket"
@@ -30,7 +29,6 @@ object MyBuild extends Build {
       case x => MergeStrategy.first
     }
   )
-  .settings(SbtStartScript.startScriptForClassesSettings: _*)
   .settings(
     sourcesInBase := false,
     organization := Organization,
@@ -77,5 +75,5 @@ object MyBuild extends Build {
     testOptions in Test += Tests.Setup( () => new java.io.File("target/gitbucket_home_for_test").mkdir() ),
     fork in Test := true,
     packageOptions += Package.MainClass("JettyLauncher")
-  ).enablePlugins(SbtTwirl, JettyPlugin)
+  ).enablePlugins(SbtTwirl, JettyPlugin, JavaAppPackaging)
 }
