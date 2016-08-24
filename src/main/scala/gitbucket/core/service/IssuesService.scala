@@ -194,13 +194,17 @@ trait IssuesService {
    */
   def searchPullRequestByApi(condition: IssueSearchCondition, offset: Int, limit: Int, repos: (String, String)*)
                  (implicit s: Session): List[(Issue, Account, Int, PullRequest, Repository, Account)] = {
+    object ~ {
+      def unapply[A, B](t: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(t)
+    }
+
     // get issues and comment count and labels
     searchIssueQueryBase(condition, true, offset, limit, repos)
-      .innerJoin(PullRequests).on { case ((t1, t2), t3) => t3.byPrimaryKey(t1.userName, t1.repositoryName, t1.issueId) }
-      .innerJoin(Repositories).on { case (((t1, t2), t3), t4) => t4.byRepository(t1.userName, t1.repositoryName) }
-      .innerJoin(Accounts).on { case ((((t1, t2), t3), t4), t5) => t5.userName === t1.openedUserName }
-      .innerJoin(Accounts).on { case (((((t1, t2), t3), t4), t5), t6) => t6.userName === t4.userName }
-      .map { case (((((t1, t2), t3), t4), t5), t6) =>
+      .innerJoin(PullRequests).on { case t1 ~ t2 ~ t3 => t3.byPrimaryKey(t1.userName, t1.repositoryName, t1.issueId) }
+      .innerJoin(Repositories).on { case t1 ~ t2 ~ t3 ~ t4 => t4.byRepository(t1.userName, t1.repositoryName) }
+      .innerJoin(Accounts).on { case t1 ~ t2 ~ t3 ~ t4 ~ t5 => t5.userName === t1.openedUserName }
+      .innerJoin(Accounts).on { case t1 ~ t2 ~ t3 ~ t4 ~ t5 ~ t6 => t6.userName === t4.userName }
+      .map { case t1 ~ t2 ~ t3 ~ t4 ~ t5 ~ t6 =>
           (t1, t5, t2.commentCount, t3, t4, t6)
       }
       .list
