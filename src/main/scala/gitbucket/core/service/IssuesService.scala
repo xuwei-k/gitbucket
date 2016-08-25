@@ -194,9 +194,7 @@ trait IssuesService {
    */
   def searchPullRequestByApi(condition: IssueSearchCondition, offset: Int, limit: Int, repos: (String, String)*)
                  (implicit s: Session): List[(Issue, Account, Int, PullRequest, Repository, Account)] = {
-    object ~ {
-      def unapply[A, B](t: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(t)
-    }
+    val ~ = Tuple2
 
     // get issues and comment count and labels
     searchIssueQueryBase(condition, true, offset, limit, repos)
