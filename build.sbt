@@ -6,7 +6,7 @@ val Name = "gitbucket"
 val GitBucketVersion = "4.34.0"
 val ScalatraVersion = "2.7.0"
 val JettyVersion = "9.4.30.v20200611"
-val JgitVersion = "5.8.0.202006091008-r"
+val JgitVersion = "5.8.1.202007141445-r"
 
 lazy val root = (project in file("."))
   .enablePlugins(SbtTwirl, ScalatraPlugin)
@@ -49,7 +49,7 @@ libraryDependencies ++= Seq(
   "com.github.takezoe"              %% "blocking-slick-32"           % "0.0.12",
   "com.novell.ldap"                 % "jldap"                        % "2009-10-07",
   "com.h2database"                  % "h2"                           % "1.4.199",
-  "org.mariadb.jdbc"                % "mariadb-java-client"          % "2.6.0",
+  "org.mariadb.jdbc"                % "mariadb-java-client"          % "2.6.2",
   "org.postgresql"                  % "postgresql"                   % "42.2.6",
   "ch.qos.logback"                  % "logback-classic"              % "1.2.3",
   "com.zaxxer"                      % "HikariCP"                     % "3.4.5",
@@ -64,8 +64,8 @@ libraryDependencies ++= Seq(
   "javax.servlet"                   % "javax.servlet-api"            % "3.1.0" % "provided",
   "junit"                           % "junit"                        % "4.13" % "test",
   "org.scalatra"                    %% "scalatra-scalatest"          % ScalatraVersion % "test",
-  "org.mockito"                     % "mockito-core"                 % "3.3.3" % "test",
-  "com.dimafeng"                    %% "testcontainers-scala"        % "0.37.0" % "test",
+  "org.mockito"                     % "mockito-core"                 % "3.4.4" % "test",
+  "com.dimafeng"                    %% "testcontainers-scala"        % "0.38.1" % "test",
   "org.testcontainers"              % "mysql"                        % "1.14.3" % "test",
   "org.testcontainers"              % "postgresql"                   % "1.14.3" % "test",
   "net.i2p.crypto"                  % "eddsa"                        % "0.3.0",
