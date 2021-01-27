@@ -9,7 +9,7 @@ final case class CreateTagInfo(
   userName: String,
   repositoryName: String,
   activityUserName: String,
-  tagName: String,
+  tagName: String
 ) extends BaseActivityInfo {
 
   override def toActivity: Activity =

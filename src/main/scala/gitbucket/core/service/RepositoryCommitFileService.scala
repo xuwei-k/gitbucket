@@ -59,7 +59,8 @@ trait RepositoryCommitFileService {
       path,
       newFileName,
       oldFileName,
-      if (content.nonEmpty) { content.getBytes(charset) } else { Array.emptyByteArray },
+      if (content.nonEmpty) { content.getBytes(charset) }
+      else { Array.emptyByteArray },
       message,
       commit,
       loginAccount,
@@ -107,9 +108,15 @@ trait RepositoryCommitFileService {
             .headOption
 
           newPath.foreach { newPath =>
-            builder.add(JGitUtil.createDirCacheEntry(newPath, permission.map { bits =>
-              FileMode.fromBits(bits)
-            } getOrElse FileMode.REGULAR_FILE, inserter.insert(Constants.OBJ_BLOB, content)))
+            builder.add(
+              JGitUtil.createDirCacheEntry(
+                newPath,
+                permission.map { bits =>
+                  FileMode.fromBits(bits)
+                } getOrElse FileMode.REGULAR_FILE,
+                inserter.insert(Constants.OBJ_BLOB, content)
+              )
+            )
           }
           builder.finish()
         }

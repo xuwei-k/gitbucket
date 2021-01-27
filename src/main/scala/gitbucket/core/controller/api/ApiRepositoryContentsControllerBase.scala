@@ -20,17 +20,16 @@ trait ApiRepositoryContentsControllerBase extends ControllerBase {
    * https://docs.github.com/en/rest/reference/repos#get-a-repository-readme
    */
   get("/api/v3/repos/:owner/:repository/readme")(referrersOnly { repository =>
-    Using.resource(Git.open(getRepositoryDir(params("owner"), params("repository")))) {
-      git =>
-        val refStr = params.getOrElse("ref", repository.repository.defaultBranch)
-        val files = getFileList(git, refStr, ".", maxFiles = context.settings.repositoryViewer.maxFiles)
-        files // files should be sorted alphabetically.
-          .find { file =>
-            !file.isDirectory && RepositoryService.readmeFiles.contains(file.name.toLowerCase)
-          } match {
-          case Some(x) => getContents(repository = repository, path = x.name, refStr = refStr, ignoreCase = true)
-          case _       => NotFound()
-        }
+    Using.resource(Git.open(getRepositoryDir(params("owner"), params("repository")))) { git =>
+      val refStr = params.getOrElse("ref", repository.repository.defaultBranch)
+      val files = getFileList(git, refStr, ".", maxFiles = context.settings.repositoryViewer.maxFiles)
+      files // files should be sorted alphabetically.
+        .find { file =>
+          !file.isDirectory && RepositoryService.readmeFiles.contains(file.name.toLowerCase)
+        } match {
+        case Some(x) => getContents(repository = repository, path = x.name, refStr = refStr, ignoreCase = true)
+        case _       => NotFound()
+      }
     }
   })
 
@@ -175,8 +174,8 @@ trait ApiRepositoryContentsControllerBase extends ControllerBase {
    */
 
   /*
- * vi. Get archive link
- * https://developer.github.com/v3/repos/contents/#get-archive-link
- */
+   * vi. Get archive link
+   * https://developer.github.com/v3/repos/contents/#get-archive-link
+   */
 
 }

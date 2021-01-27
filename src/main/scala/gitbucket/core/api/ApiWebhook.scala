@@ -22,7 +22,7 @@ case class ApiWebhook(
   config: ApiWebhookConfig,
 //  updated_at: Option[Date],
 //  created_at: Option[Date],
-  url: ApiPath,
+  url: ApiPath
 //  test_url: ApiPath,
 //  ping_url: ApiPath,
 //  last_response: ...

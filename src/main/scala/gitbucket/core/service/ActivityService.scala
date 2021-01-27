@@ -43,9 +43,11 @@ trait ActivityService {
             if (isPublic == false) {
               list += activity
             } else {
-              if (!getRepositoryInfoFromCache(activity.userName, activity.repositoryName)
-                    .map(_.isPrivate)
-                    .getOrElse(true)) {
+              if (
+                !getRepositoryInfoFromCache(activity.userName, activity.repositoryName)
+                  .map(_.isPrivate)
+                  .getOrElse(true)
+              ) {
                 list += activity
               }
             }
@@ -65,9 +67,11 @@ trait ActivityService {
         var json: String = null
         while (list.length < 50 && { json = reader.readLine(); json } != null) {
           val activity = read[Activity](json)
-          if (!getRepositoryInfoFromCache(activity.userName, activity.repositoryName)
-                .map(_.isPrivate)
-                .getOrElse(true)) {
+          if (
+            !getRepositoryInfoFromCache(activity.userName, activity.repositoryName)
+              .map(_.isPrivate)
+              .getOrElse(true)
+          ) {
             list += activity
           }
         }
@@ -87,9 +91,11 @@ trait ActivityService {
           val activity = read[Activity](json)
           if (owners.contains(activity.userName)) {
             list += activity
-          } else if (!getRepositoryInfoFromCache(activity.userName, activity.repositoryName)
-                       .map(_.isPrivate)
-                       .getOrElse(true)) {
+          } else if (
+            !getRepositoryInfoFromCache(activity.userName, activity.repositoryName)
+              .map(_.isPrivate)
+              .getOrElse(true)
+          ) {
             list += activity
           }
         }

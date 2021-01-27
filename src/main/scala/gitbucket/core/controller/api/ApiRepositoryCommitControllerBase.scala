@@ -24,26 +24,23 @@ trait ApiRepositoryCommitControllerBase extends ControllerBase {
     val name = repository.name
     // TODO: The following parameters need to be implemented. [:path, :author, :since, :until]
     val sha = params.getOrElse("sha", "refs/heads/master")
-    Using.resource(Git.open(getRepositoryDir(owner, name))) {
-      git =>
-        val repo = git.getRepository
-        Using.resource(new RevWalk(repo)) {
-          revWalk =>
-            val objectId = repo.resolve(sha)
-            revWalk.markStart(revWalk.parseCommit(objectId))
-            JsonFormat(revWalk.asScala.take(30).map {
-              commit =>
-                val commitInfo = new CommitInfo(commit)
-                ApiCommits(
-                  repositoryName = RepositoryName(repository),
-                  commitInfo = commitInfo,
-                  diffs = JGitUtil.getDiffs(git, commitInfo.parents.headOption, commitInfo.id, false, true),
-                  author = getAccount(commitInfo.authorName, commitInfo.authorEmailAddress),
-                  committer = getAccount(commitInfo.committerName, commitInfo.committerEmailAddress),
-                  commentCount = getCommitComment(repository.owner, repository.name, commitInfo.id.toString).size
-                )
-            })
-        }
+    Using.resource(Git.open(getRepositoryDir(owner, name))) { git =>
+      val repo = git.getRepository
+      Using.resource(new RevWalk(repo)) { revWalk =>
+        val objectId = repo.resolve(sha)
+        revWalk.markStart(revWalk.parseCommit(objectId))
+        JsonFormat(revWalk.asScala.take(30).map { commit =>
+          val commitInfo = new CommitInfo(commit)
+          ApiCommits(
+            repositoryName = RepositoryName(repository),
+            commitInfo = commitInfo,
+            diffs = JGitUtil.getDiffs(git, commitInfo.parents.headOption, commitInfo.id, false, true),
+            author = getAccount(commitInfo.authorName, commitInfo.authorEmailAddress),
+            committer = getAccount(commitInfo.committerName, commitInfo.committerEmailAddress),
+            commentCount = getCommitComment(repository.owner, repository.name, commitInfo.id.toString).size
+          )
+        })
+      }
     }
   })
 
@@ -56,24 +53,23 @@ trait ApiRepositoryCommitControllerBase extends ControllerBase {
     val name = repository.name
     val sha = params("sha")
 
-    Using.resource(Git.open(getRepositoryDir(owner, name))) {
-      git =>
-        val repo = git.getRepository
-        val objectId = repo.resolve(sha)
-        val commitInfo = Using.resource(new RevWalk(repo)) { revWalk =>
-          new CommitInfo(revWalk.parseCommit(objectId))
-        }
+    Using.resource(Git.open(getRepositoryDir(owner, name))) { git =>
+      val repo = git.getRepository
+      val objectId = repo.resolve(sha)
+      val commitInfo = Using.resource(new RevWalk(repo)) { revWalk =>
+        new CommitInfo(revWalk.parseCommit(objectId))
+      }
 
-        JsonFormat(
-          ApiCommits(
-            repositoryName = RepositoryName(repository),
-            commitInfo = commitInfo,
-            diffs = JGitUtil.getDiffs(git, commitInfo.parents.headOption, commitInfo.id, false, true),
-            author = getAccount(commitInfo.authorName, commitInfo.authorEmailAddress),
-            committer = getAccount(commitInfo.committerName, commitInfo.committerEmailAddress),
-            commentCount = getCommitComment(repository.owner, repository.name, sha).size
-          )
+      JsonFormat(
+        ApiCommits(
+          repositoryName = RepositoryName(repository),
+          commitInfo = commitInfo,
+          diffs = JGitUtil.getDiffs(git, commitInfo.parents.headOption, commitInfo.id, false, true),
+          author = getAccount(commitInfo.authorName, commitInfo.authorEmailAddress),
+          committer = getAccount(commitInfo.committerName, commitInfo.committerEmailAddress),
+          commentCount = getCommitComment(repository.owner, repository.name, sha).size
         )
+      )
     }
   })
 

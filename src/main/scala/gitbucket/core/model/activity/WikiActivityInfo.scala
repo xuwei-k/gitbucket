@@ -50,7 +50,7 @@ final case class DeleteWikiInfo(
   userName: String,
   repositoryName: String,
   activityUserName: String,
-  pageName: String,
+  pageName: String
 ) extends BaseActivityInfo {
 
   override def toActivity: Activity =

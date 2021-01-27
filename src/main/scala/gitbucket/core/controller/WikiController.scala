@@ -173,34 +173,32 @@ trait WikiControllerBase extends ControllerBase {
 
   post("/:owner/:repository/wiki/_edit", editForm)(readableUsersOnly { (form, repository) =>
     if (isEditable(repository)) {
-      defining(context.loginAccount.get) {
-        loginAccount =>
-          saveWikiPage(
-            repository.owner,
-            repository.name,
-            form.currentPageName,
-            form.pageName,
-            appendNewLine(convertLineSeparator(form.content, "LF"), "LF"),
-            loginAccount,
-            form.message.getOrElse(""),
-            Some(form.id)
-          ).foreach {
-            commitId =>
-              updateLastActivityDate(repository.owner, repository.name)
-              val wikiEditInfo =
-                EditWikiPageInfo(repository.owner, repository.name, loginAccount.userName, form.pageName, commitId)
-              recordActivity(wikiEditInfo)
-              callWebHookOf(repository.owner, repository.name, WebHook.Gollum, context.settings) {
-                getAccountByUserName(repository.owner).map { repositoryUser =>
-                  WebHookGollumPayload("edited", form.pageName, commitId, repository, repositoryUser, loginAccount)
-                }
-              }
+      defining(context.loginAccount.get) { loginAccount =>
+        saveWikiPage(
+          repository.owner,
+          repository.name,
+          form.currentPageName,
+          form.pageName,
+          appendNewLine(convertLineSeparator(form.content, "LF"), "LF"),
+          loginAccount,
+          form.message.getOrElse(""),
+          Some(form.id)
+        ).foreach { commitId =>
+          updateLastActivityDate(repository.owner, repository.name)
+          val wikiEditInfo =
+            EditWikiPageInfo(repository.owner, repository.name, loginAccount.userName, form.pageName, commitId)
+          recordActivity(wikiEditInfo)
+          callWebHookOf(repository.owner, repository.name, WebHook.Gollum, context.settings) {
+            getAccountByUserName(repository.owner).map { repositoryUser =>
+              WebHookGollumPayload("edited", form.pageName, commitId, repository, repositoryUser, loginAccount)
+            }
           }
-          if (notReservedPageName(form.pageName)) {
-            redirect(s"/${repository.owner}/${repository.name}/wiki/${StringUtil.urlEncode(form.pageName)}")
-          } else {
-            redirect(s"/${repository.owner}/${repository.name}/wiki")
-          }
+        }
+        if (notReservedPageName(form.pageName)) {
+          redirect(s"/${repository.owner}/${repository.name}/wiki/${StringUtil.urlEncode(form.pageName)}")
+        } else {
+          redirect(s"/${repository.owner}/${repository.name}/wiki")
+        }
       }
     } else Unauthorized()
   })
@@ -213,35 +211,33 @@ trait WikiControllerBase extends ControllerBase {
 
   post("/:owner/:repository/wiki/_new", newForm)(readableUsersOnly { (form, repository) =>
     if (isEditable(repository)) {
-      defining(context.loginAccount.get) {
-        loginAccount =>
-          saveWikiPage(
-            repository.owner,
-            repository.name,
-            form.currentPageName,
-            form.pageName,
-            form.content,
-            loginAccount,
-            form.message.getOrElse(""),
-            None
-          ).foreach {
-            commitId =>
-              updateLastActivityDate(repository.owner, repository.name)
-              val createWikiPageInfo =
-                CreateWikiPageInfo(repository.owner, repository.name, loginAccount.userName, form.pageName)
-              recordActivity(createWikiPageInfo)
-              callWebHookOf(repository.owner, repository.name, WebHook.Gollum, context.settings) {
-                getAccountByUserName(repository.owner).map { repositoryUser =>
-                  WebHookGollumPayload("created", form.pageName, commitId, repository, repositoryUser, loginAccount)
-                }
-              }
+      defining(context.loginAccount.get) { loginAccount =>
+        saveWikiPage(
+          repository.owner,
+          repository.name,
+          form.currentPageName,
+          form.pageName,
+          form.content,
+          loginAccount,
+          form.message.getOrElse(""),
+          None
+        ).foreach { commitId =>
+          updateLastActivityDate(repository.owner, repository.name)
+          val createWikiPageInfo =
+            CreateWikiPageInfo(repository.owner, repository.name, loginAccount.userName, form.pageName)
+          recordActivity(createWikiPageInfo)
+          callWebHookOf(repository.owner, repository.name, WebHook.Gollum, context.settings) {
+            getAccountByUserName(repository.owner).map { repositoryUser =>
+              WebHookGollumPayload("created", form.pageName, commitId, repository, repositoryUser, loginAccount)
+            }
           }
+        }
 
-          if (notReservedPageName(form.pageName)) {
-            redirect(s"/${repository.owner}/${repository.name}/wiki/${StringUtil.urlEncode(form.pageName)}")
-          } else {
-            redirect(s"/${repository.owner}/${repository.name}/wiki")
-          }
+        if (notReservedPageName(form.pageName)) {
+          redirect(s"/${repository.owner}/${repository.name}/wiki/${StringUtil.urlEncode(form.pageName)}")
+        } else {
+          redirect(s"/${repository.owner}/${repository.name}/wiki")
+        }
       }
     } else Unauthorized()
   })
@@ -250,26 +246,25 @@ trait WikiControllerBase extends ControllerBase {
     if (isEditable(repository)) {
       val pageName = StringUtil.urlDecode(params("page"))
 
-      defining(context.loginAccount.get) {
-        loginAccount =>
-          deleteWikiPage(
-            repository.owner,
-            repository.name,
-            pageName,
-            loginAccount.fullName,
-            loginAccount.mailAddress,
-            s"Destroyed ${pageName}"
-          )
-          val deleteWikiInfo = DeleteWikiInfo(
-            repository.owner,
-            repository.name,
-            loginAccount.userName,
-            pageName
-          )
-          recordActivity(deleteWikiInfo)
-          updateLastActivityDate(repository.owner, repository.name)
+      defining(context.loginAccount.get) { loginAccount =>
+        deleteWikiPage(
+          repository.owner,
+          repository.name,
+          pageName,
+          loginAccount.fullName,
+          loginAccount.mailAddress,
+          s"Destroyed ${pageName}"
+        )
+        val deleteWikiInfo = DeleteWikiInfo(
+          repository.owner,
+          repository.name,
+          loginAccount.userName,
+          pageName
+        )
+        recordActivity(deleteWikiInfo)
+        updateLastActivityDate(repository.owner, repository.name)
 
-          redirect(s"/${repository.owner}/${repository.name}/wiki")
+        redirect(s"/${repository.owner}/${repository.name}/wiki")
       }
     } else Unauthorized()
   })
