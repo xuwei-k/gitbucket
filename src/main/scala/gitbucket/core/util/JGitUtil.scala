@@ -436,24 +436,23 @@ object JGitUtil {
       def appendLastCommits(
         fileList: List[(ObjectId, FileMode, String, String, Option[String])]
       ): List[(ObjectId, FileMode, String, String, Option[String], Option[RevCommit])] = {
-        fileList.map {
-          case (id, mode, name, path, opt) =>
-            if (maxFiles > 0 && fileList.size >= maxFiles) {
-              // Don't attempt to get the last commit if the number of files is very large.
-              (id, mode, name, path, opt, None)
-            } else if (commitCount < 10000) {
-              (id, mode, name, path, opt, Some(getCommit(path)))
+        fileList.map { case (id, mode, name, path, opt) =>
+          if (maxFiles > 0 && fileList.size >= maxFiles) {
+            // Don't attempt to get the last commit if the number of files is very large.
+            (id, mode, name, path, opt, None)
+          } else if (commitCount < 10000) {
+            (id, mode, name, path, opt, Some(getCommit(path)))
+          } else {
+            // Use in-memory cache if the commit count is too big.
+            val cached = objectCommitCache.getEntry(id)
+            if (cached == null) {
+              val commit = getCommit(path)
+              objectCommitCache.put(id, commit)
+              (id, mode, name, path, opt, Some(commit))
             } else {
-              // Use in-memory cache if the commit count is too big.
-              val cached = objectCommitCache.getEntry(id)
-              if (cached == null) {
-                val commit = getCommit(path)
-                objectCommitCache.put(id, commit)
-                (id, mode, name, path, opt, Some(commit))
-              } else {
-                (id, mode, name, path, opt, Some(cached.getValue))
-              }
+              (id, mode, name, path, opt, Some(cached.getValue))
             }
+          }
         }
       }
 
@@ -482,23 +481,22 @@ object JGitUtil {
 
       appendLastCommits(fileList)
         .map(simplifyPath)
-        .map {
-          case (objectId, fileMode, name, path, linkUrl, commit) =>
-            FileInfo(
-              objectId,
-              fileMode == FileMode.TREE || fileMode == FileMode.GITLINK,
-              name,
-              path,
-              getSummaryMessage(
-                commit.map(_.getFullMessage).getOrElse(""),
-                commit.map(_.getShortMessage).getOrElse("")
-              ),
-              commit.map(_.getName).getOrElse(""),
-              commit.map(_.getAuthorIdent.getWhen).orNull,
-              commit.map(_.getAuthorIdent.getName).getOrElse(""),
-              commit.map(_.getAuthorIdent.getEmailAddress).getOrElse(""),
-              linkUrl
-            )
+        .map { case (objectId, fileMode, name, path, linkUrl, commit) =>
+          FileInfo(
+            objectId,
+            fileMode == FileMode.TREE || fileMode == FileMode.GITLINK,
+            name,
+            path,
+            getSummaryMessage(
+              commit.map(_.getFullMessage).getOrElse(""),
+              commit.map(_.getShortMessage).getOrElse("")
+            ),
+            commit.map(_.getName).getOrElse(""),
+            commit.map(_.getAuthorIdent.getWhen).orNull,
+            commit.map(_.getAuthorIdent.getName).getOrElse(""),
+            commit.map(_.getAuthorIdent.getEmailAddress).getOrElse(""),
+            linkUrl
+          )
         }
         .sortWith { (file1, file2) =>
           (file1.isDirectory, file2.isDirectory) match {
@@ -693,10 +691,9 @@ object JGitUtil {
           toCommit.getParentCount match {
             case 0 =>
               df.scan(
-                  new EmptyTreeIterator(),
-                  new CanonicalTreeParser(null, git.getRepository.newObjectReader(), toCommit.getTree)
-                )
-                .asScala
+                new EmptyTreeIterator(),
+                new CanonicalTreeParser(null, git.getRepository.newObjectReader(), toCommit.getTree)
+              ).asScala
             case _ => df.scan(toCommit.getParent(0), toCommit.getTree).asScala
           }
         }
@@ -894,10 +891,9 @@ object JGitUtil {
       Some(if (revstr.isEmpty) repository.repository.defaultBranch else revstr),
       repository.branchList.headOption
     ).flatMap {
-        case Some(rev) => Some((git.getRepository.resolve(rev), rev))
-        case None      => None
-      }
-      .find(_._1 != null)
+      case Some(rev) => Some((git.getRepository.resolve(rev), rev))
+      case None      => None
+    }.find(_._1 != null)
   }
 
   def createTag(git: Git, name: String, message: Option[String], commitId: String) = {
@@ -1274,7 +1270,8 @@ object JGitUtil {
               c.getAuthorIdent.getWhen,
               Option(git.log.add(c).addPath(blame.getSourcePath(i)).setSkip(1).setMaxCount(2).call.iterator.next)
                 .map(_.name),
-              if (blame.getSourcePath(i) == path) { None } else { Some(blame.getSourcePath(i)) },
+              if (blame.getSourcePath(i) == path) { None }
+              else { Some(blame.getSourcePath(i)) },
               c.getCommitterIdent.getWhen,
               c.getShortMessage,
               Set.empty

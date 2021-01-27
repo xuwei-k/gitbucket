@@ -124,35 +124,34 @@ trait ApiReleaseControllerBase extends ControllerBase {
     val name = params("name")
     val tag = params("tag")
     getRelease(repository.owner, repository.name, tag)
-      .map {
-        release =>
-          defining(FileUtil.generateFileId) { fileId =>
-            val buf = new Array[Byte](request.inputStream.available())
-            request.inputStream.read(buf)
-            FileUtils.writeByteArrayToFile(
-              new File(
-                getReleaseFilesDir(repository.owner, repository.name),
-                FileUtil.checkFilename(tag + "/" + fileId)
-              ),
-              buf
-            )
-            createReleaseAsset(
-              repository.owner,
-              repository.name,
-              tag,
-              fileId,
-              name,
-              request.contentLength.getOrElse(0),
-              context.loginAccount.get
-            )
-            getReleaseAsset(repository.owner, repository.name, tag, fileId)
-              .map { asset =>
-                JsonFormat(ApiReleaseAsset(asset, RepositoryName(repository)))
-              }
-              .getOrElse {
-                ApiError("Unknown error")
-              }
-          }
+      .map { release =>
+        defining(FileUtil.generateFileId) { fileId =>
+          val buf = new Array[Byte](request.inputStream.available())
+          request.inputStream.read(buf)
+          FileUtils.writeByteArrayToFile(
+            new File(
+              getReleaseFilesDir(repository.owner, repository.name),
+              FileUtil.checkFilename(tag + "/" + fileId)
+            ),
+            buf
+          )
+          createReleaseAsset(
+            repository.owner,
+            repository.name,
+            tag,
+            fileId,
+            name,
+            request.contentLength.getOrElse(0),
+            context.loginAccount.get
+          )
+          getReleaseAsset(repository.owner, repository.name, tag, fileId)
+            .map { asset =>
+              JsonFormat(ApiReleaseAsset(asset, RepositoryName(repository)))
+            }
+            .getOrElse {
+              ApiError("Unknown error")
+            }
+        }
       }
       .getOrElse(NotFound())
   })
@@ -178,7 +177,7 @@ trait ApiReleaseControllerBase extends ControllerBase {
    */
 
   /*
- * xii. Delete a release asset
- * https://developer.github.com/v3/repos/releases/#edit-a-release-asset
- */
+   * xii. Delete a release asset
+   * https://developer.github.com/v3/repos/releases/#edit-a-release-asset
+   */
 }

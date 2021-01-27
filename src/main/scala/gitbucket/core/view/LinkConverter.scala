@@ -10,15 +10,16 @@ trait LinkConverter { self: RequestCache =>
   /**
    * Creates a link to the issue or the pull request from the issue id.
    */
-  protected def createIssueLink(repository: RepositoryService.RepositoryInfo, issueId: Int, title: String)(
-    implicit context: Context
+  protected def createIssueLink(repository: RepositoryService.RepositoryInfo, issueId: Int, title: String)(implicit
+    context: Context
   ): String = {
     val userName = repository.repository.userName
     val repositoryName = repository.repository.repositoryName
 
     getIssueFromCache(userName, repositoryName, issueId.toString) match {
       case Some(issue) =>
-        s"""<a href="${context.path}/${userName}/${repositoryName}/${if (issue.isPullRequest) "pull" else "issues"}/${issueId}"><strong>${StringUtil
+        s"""<a href="${context.path}/${userName}/${repositoryName}/${if (issue.isPullRequest) "pull"
+        else "issues"}/${issueId}"><strong>${StringUtil
           .escapeHtml(title)}</strong> #${issueId}</a>"""
       case None =>
         s"Unknown #${issueId}"
@@ -41,7 +42,7 @@ trait LinkConverter { self: RequestCache =>
       else text
 
     escaped
-    // convert username/project@SHA to link
+      // convert username/project@SHA to link
       .replaceBy("(?<=(^|\\W))([a-zA-Z0-9\\-_]+)/([a-zA-Z0-9\\-_\\.]+)@([a-f0-9]{40})(?=(\\W|$))".r) { m =>
         getAccountByUserNameFromCache(m.group(2)).map { _ =>
           s"""<code><a href="${context.path}/${m.group(2)}/${m.group(3)}/commit/${m.group(4)}">${m.group(2)}/${m.group(

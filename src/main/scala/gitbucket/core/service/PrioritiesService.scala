@@ -60,12 +60,11 @@ trait PrioritiesService {
     Priorities
       .filter(_.byRepository(owner, repository))
       .list
-      .foreach(
-        p =>
-          Priorities
-            .filter(_.byPrimaryKey(owner, repository, p.priorityId))
-            .map(_.ordering)
-            .update(order.get(p.priorityId).get)
+      .foreach(p =>
+        Priorities
+          .filter(_.byPrimaryKey(owner, repository, p.priorityId))
+          .map(_.ordering)
+          .update(order.get(p.priorityId).get)
       )
   }
 
@@ -94,12 +93,11 @@ trait PrioritiesService {
       .map(_.isDefault)
       .update(false)
 
-    priorityId.foreach(
-      id =>
-        Priorities
-          .filter(_.byPrimaryKey(owner, repository, id))
-          .map(_.isDefault)
-          .update(true)
+    priorityId.foreach(id =>
+      Priorities
+        .filter(_.byPrimaryKey(owner, repository, id))
+        .map(_.isDefault)
+        .update(true)
     )
   }
 }

@@ -39,16 +39,15 @@ trait ApiIssueControllerBase extends ControllerBase {
         repos = repository.owner -> repository.name
       )
 
-    JsonFormat(issues.map {
-      case (issue, issueUser, assignedUser) =>
-        ApiIssue(
-          issue = issue,
-          repositoryName = RepositoryName(repository),
-          user = ApiUser(issueUser),
-          assignee = assignedUser.map(ApiUser(_)),
-          labels = getIssueLabels(repository.owner, repository.name, issue.issueId)
-            .map(ApiLabel(_, RepositoryName(repository)))
-        )
+    JsonFormat(issues.map { case (issue, issueUser, assignedUser) =>
+      ApiIssue(
+        issue = issue,
+        repositoryName = RepositoryName(repository),
+        user = ApiUser(issueUser),
+        assignee = assignedUser.map(ApiUser(_)),
+        labels = getIssueLabels(repository.owner, repository.name, issue.issueId)
+          .map(ApiLabel(_, RepositoryName(repository)))
+      )
     })
   })
 
@@ -120,7 +119,7 @@ trait ApiIssueControllerBase extends ControllerBase {
    */
 
   /*
- * vii. Unlock an issue
- * https://developer.github.com/v3/issues/#unlock-an-issue
- */
+   * vii. Unlock an issue
+   * https://developer.github.com/v3/issues/#unlock-an-issue
+   */
 }

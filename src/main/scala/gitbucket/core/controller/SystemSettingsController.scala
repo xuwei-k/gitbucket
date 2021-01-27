@@ -237,28 +237,27 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
     val conn = request2Session(request).conn
     val meta = conn.getMetaData
     val tables = ListBuffer[Table]()
-    Using.resource(meta.getTables(null, "%", "%", Array("TABLE", "VIEW"))) {
-      rs =>
-        while (rs.next()) {
-          val tableName = rs.getString("TABLE_NAME")
+    Using.resource(meta.getTables(null, "%", "%", Array("TABLE", "VIEW"))) { rs =>
+      while (rs.next()) {
+        val tableName = rs.getString("TABLE_NAME")
 
-          val pkColumns = ListBuffer[String]()
-          Using.resource(meta.getPrimaryKeys(null, null, tableName)) { rs =>
-            while (rs.next()) {
-              pkColumns += rs.getString("COLUMN_NAME").toUpperCase
-            }
+        val pkColumns = ListBuffer[String]()
+        Using.resource(meta.getPrimaryKeys(null, null, tableName)) { rs =>
+          while (rs.next()) {
+            pkColumns += rs.getString("COLUMN_NAME").toUpperCase
           }
-
-          val columns = ListBuffer[Column]()
-          Using.resource(meta.getColumns(null, "%", tableName, "%")) { rs =>
-            while (rs.next()) {
-              val columnName = rs.getString("COLUMN_NAME").toUpperCase
-              columns += Column(columnName, pkColumns.contains(columnName))
-            }
-          }
-
-          tables += Table(tableName.toUpperCase, columns.toSeq)
         }
+
+        val columns = ListBuffer[Column]()
+        Using.resource(meta.getColumns(null, "%", tableName, "%")) { rs =>
+          while (rs.next()) {
+            val columnName = rs.getString("COLUMN_NAME").toUpperCase
+            columns += Column(columnName, pkColumns.contains(columnName))
+          }
+        }
+
+        tables += Table(tableName.toUpperCase, columns.toSeq)
+      }
     }
     html.dbviewer(tables.toSeq)
   })
@@ -271,28 +270,26 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
         if (trimmedQuery.nonEmpty) {
           try {
             val conn = request2Session(request).conn
-            Using.resource(conn.prepareStatement(query)) {
-              stmt =>
-                if (trimmedQuery.toUpperCase.startsWith("SELECT")) {
-                  Using.resource(stmt.executeQuery()) {
-                    rs =>
-                      val meta = rs.getMetaData
-                      val columns = for (i <- 1 to meta.getColumnCount) yield {
-                        meta.getColumnName(i)
-                      }
-                      val result = ListBuffer[Map[String, String]]()
-                      while (rs.next()) {
-                        val row = columns.map { columnName =>
-                          columnName -> Option(rs.getObject(columnName)).map(_.toString).getOrElse("<NULL>")
-                        }.toMap
-                        result += row
-                      }
-                      Ok(Serialization.write(Map("type" -> "query", "columns" -> columns, "rows" -> result)))
+            Using.resource(conn.prepareStatement(query)) { stmt =>
+              if (trimmedQuery.toUpperCase.startsWith("SELECT")) {
+                Using.resource(stmt.executeQuery()) { rs =>
+                  val meta = rs.getMetaData
+                  val columns = for (i <- 1 to meta.getColumnCount) yield {
+                    meta.getColumnName(i)
                   }
-                } else {
-                  val rows = stmt.executeUpdate()
-                  Ok(Serialization.write(Map("type" -> "update", "rows" -> rows)))
+                  val result = ListBuffer[Map[String, String]]()
+                  while (rs.next()) {
+                    val row = columns.map { columnName =>
+                      columnName -> Option(rs.getObject(columnName)).map(_.toString).getOrElse("<NULL>")
+                    }.toMap
+                    result += row
+                  }
+                  Ok(Serialization.write(Map("type" -> "query", "columns" -> columns, "rows" -> result)))
                 }
+              } else {
+                val rows = stmt.executeUpdate()
+                Ok(Serialization.write(Map("type" -> "update", "rows" -> rows)))
+              }
             }
           } catch {
             case e: Exception =>
@@ -400,44 +397,43 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
 
   post("/admin/users/:name/_edituser", editUserForm)(adminOnly { form =>
     val userName = params("userName")
-    getAccountByUserName(userName, true).map {
-      account =>
-        if (account.isAdmin && (form.isRemoved || !form.isAdmin) && isLastAdministrator(account)) {
-          flash.update("error", "Account can't be turned off because this is last one administrator.")
-          redirect(s"/admin/users/${userName}/_edituser")
-        } else {
-          if (form.isRemoved) {
-            // Remove repositories
-            //        getRepositoryNamesOfUser(userName).foreach { repositoryName =>
-            //          deleteRepository(userName, repositoryName)
-            //          FileUtils.deleteDirectory(getRepositoryDir(userName, repositoryName))
-            //          FileUtils.deleteDirectory(getWikiRepositoryDir(userName, repositoryName))
-            //          FileUtils.deleteDirectory(getTemporaryDir(userName, repositoryName))
-            //        }
-            // Remove from GROUP_MEMBER and COLLABORATOR
-            removeUserRelatedData(userName)
-          }
-
-          updateAccount(
-            account.copy(
-              password = form.password.map(pbkdf2_sha256).getOrElse(account.password),
-              fullName = form.fullName,
-              mailAddress = form.mailAddress,
-              isAdmin = form.isAdmin,
-              description = form.description,
-              url = form.url,
-              isRemoved = form.isRemoved
-            )
-          )
-
-          updateImage(userName, form.fileId, form.clearImage)
-          updateAccountExtraMailAddresses(userName, form.extraMailAddresses.filter(_ != ""))
-
-          // call hooks
-          if (form.isRemoved) PluginRegistry().getAccountHooks.foreach(_.deleted(userName))
-
-          redirect("/admin/users")
+    getAccountByUserName(userName, true).map { account =>
+      if (account.isAdmin && (form.isRemoved || !form.isAdmin) && isLastAdministrator(account)) {
+        flash.update("error", "Account can't be turned off because this is last one administrator.")
+        redirect(s"/admin/users/${userName}/_edituser")
+      } else {
+        if (form.isRemoved) {
+          // Remove repositories
+          //        getRepositoryNamesOfUser(userName).foreach { repositoryName =>
+          //          deleteRepository(userName, repositoryName)
+          //          FileUtils.deleteDirectory(getRepositoryDir(userName, repositoryName))
+          //          FileUtils.deleteDirectory(getWikiRepositoryDir(userName, repositoryName))
+          //          FileUtils.deleteDirectory(getTemporaryDir(userName, repositoryName))
+          //        }
+          // Remove from GROUP_MEMBER and COLLABORATOR
+          removeUserRelatedData(userName)
         }
+
+        updateAccount(
+          account.copy(
+            password = form.password.map(pbkdf2_sha256).getOrElse(account.password),
+            fullName = form.fullName,
+            mailAddress = form.mailAddress,
+            isAdmin = form.isAdmin,
+            description = form.description,
+            url = form.url,
+            isRemoved = form.isRemoved
+          )
+        )
+
+        updateImage(userName, form.fileId, form.clearImage)
+        updateAccountExtraMailAddresses(userName, form.extraMailAddresses.filter(_ != ""))
+
+        // call hooks
+        if (form.isRemoved) PluginRegistry().getAccountHooks.foreach(_.deleted(userName))
+
+        redirect("/admin/users")
+      }
     } getOrElse NotFound()
   })
 
@@ -479,15 +475,13 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
           }
         }
         .toList
-    ) {
-      case (groupName, members) =>
-        getAccountByUserName(groupName, true).map {
-          account =>
-            updateGroup(groupName, form.description, form.url, form.isRemoved)
+    ) { case (groupName, members) =>
+      getAccountByUserName(groupName, true).map { account =>
+        updateGroup(groupName, form.description, form.url, form.isRemoved)
 
-            if (form.isRemoved) {
-              // Remove from GROUP_MEMBER
-              updateGroupMembers(form.groupName, Nil)
+        if (form.isRemoved) {
+          // Remove from GROUP_MEMBER
+          updateGroupMembers(form.groupName, Nil)
 //          // Remove repositories
 //          getRepositoryNamesOfUser(form.groupName).foreach { repositoryName =>
 //            deleteRepository(groupName, repositoryName)
@@ -495,9 +489,9 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
 //            FileUtils.deleteDirectory(getWikiRepositoryDir(groupName, repositoryName))
 //            FileUtils.deleteDirectory(getTemporaryDir(groupName, repositoryName))
 //          }
-            } else {
-              // Update GROUP_MEMBER
-              updateGroupMembers(form.groupName, members)
+        } else {
+          // Update GROUP_MEMBER
+          updateGroupMembers(form.groupName, members)
 //          // Update COLLABORATOR for group repositories
 //          getRepositoryNamesOfUser(form.groupName).foreach { repositoryName =>
 //            removeCollaborators(form.groupName, repositoryName)
@@ -505,12 +499,12 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
 //              addCollaborator(form.groupName, repositoryName, userName)
 //            }
 //          }
-            }
+        }
 
-            updateImage(form.groupName, form.fileId, form.clearImage)
-            redirect("/admin/users")
+        updateImage(form.groupName, form.fileId, form.clearImage)
+        redirect("/admin/users")
 
-        } getOrElse NotFound()
+      } getOrElse NotFound()
     }
   })
 
@@ -549,9 +543,11 @@ trait SystemSettingsControllerBase extends AccountManagementControllerBase {
   private def members: Constraint =
     new Constraint() {
       override def validate(name: String, value: String, messages: Messages): Option[String] = {
-        if (value.split(",").exists {
-              _.split(":") match { case Array(userName, isManager) => isManager.toBoolean }
-            }) None
+        if (
+          value.split(",").exists {
+            _.split(":") match { case Array(userName, isManager) => isManager.toBoolean }
+          }
+        ) None
         else Some("Must select one manager at least.")
       }
     }

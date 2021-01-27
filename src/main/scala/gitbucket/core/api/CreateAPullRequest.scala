@@ -21,5 +21,5 @@ case class UpdateAPullRequest(
   body: Option[String],
   state: Option[String],
   base: Option[String],
-  maintainer_can_modify: Option[Boolean],
+  maintainer_can_modify: Option[Boolean]
 )

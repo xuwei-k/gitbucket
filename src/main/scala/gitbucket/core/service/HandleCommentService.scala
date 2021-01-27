@@ -34,110 +34,109 @@ trait HandleCommentService {
     actionOpt: Option[String]
   )(implicit context: Context, s: Session) = {
     context.loginAccount.flatMap { loginAccount =>
-      defining(repository.owner, repository.name) {
-        case (owner, name) =>
-          val userName = loginAccount.userName
+      defining(repository.owner, repository.name) { case (owner, name) =>
+        val userName = loginAccount.userName
 
-          actionOpt.collect {
+        actionOpt.collect {
+          case "close" if !issue.closed =>
+            updateClosed(owner, name, issue.issueId, true)
+          case "reopen" if issue.closed =>
+            updateClosed(owner, name, issue.issueId, false)
+        }
+
+        val (action, _) = actionOpt
+          .collect {
             case "close" if !issue.closed =>
-              updateClosed(owner, name, issue.issueId, true)
-            case "reopen" if issue.closed =>
-              updateClosed(owner, name, issue.issueId, false)
-          }
-
-          val (action, _) = actionOpt
-            .collect {
-              case "close" if !issue.closed =>
-                val info = if (issue.isPullRequest) {
-                  ClosePullRequestInfo(owner, name, userName, issue.issueId, issue.title)
-                } else {
-                  CloseIssueInfo(owner, name, userName, issue.issueId, issue.title)
-                }
-                recordActivity(info)
-                Some("close") -> info
-              case "reopen" if issue.closed =>
-                val info = if (issue.isPullRequest) {
-                  ReopenPullRequestInfo(owner, name, userName, issue.issueId, issue.title)
-                } else {
-                  ReopenIssueInfo(owner, name, userName, issue.issueId, issue.title)
-                }
-                recordActivity(info)
-                Some("reopen") -> info
-            }
-            .getOrElse(None -> None)
-
-          val commentId = (content, action) match {
-            case (None, None) => None
-            case (None, Some(action)) =>
-              Some(createComment(owner, name, userName, issue.issueId, action.capitalize, action))
-            case (Some(content), _) =>
-              val id = Some(
-                createComment(
-                  owner,
-                  name,
-                  userName,
-                  issue.issueId,
-                  content,
-                  action.map(_ + "_comment").getOrElse("comment")
-                )
-              )
-
-              // record comment activity
-              val commentInfo = if (issue.isPullRequest) {
-                PullRequestCommentInfo(owner, name, userName, content, issue.issueId)
+              val info = if (issue.isPullRequest) {
+                ClosePullRequestInfo(owner, name, userName, issue.issueId, issue.title)
               } else {
-                IssueCommentInfo(owner, name, userName, content, issue.issueId)
+                CloseIssueInfo(owner, name, userName, issue.issueId, issue.title)
               }
-              recordActivity(commentInfo)
-
-              // extract references and create refer comment
-              createReferComment(owner, name, issue, content, loginAccount)
-
-              id
-          }
-
-          // call web hooks
-          action match {
-            case None =>
-              commentId foreach (callIssueCommentWebHook(repository, issue, _, loginAccount, context.settings))
-            case Some(act) =>
-              val webHookAction = act match {
-                case "close"  => "closed"
-                case "reopen" => "reopened"
+              recordActivity(info)
+              Some("close") -> info
+            case "reopen" if issue.closed =>
+              val info = if (issue.isPullRequest) {
+                ReopenPullRequestInfo(owner, name, userName, issue.issueId, issue.title)
+              } else {
+                ReopenIssueInfo(owner, name, userName, issue.issueId, issue.title)
               }
-              if (issue.isPullRequest)
-                callPullRequestWebHook(webHookAction, repository, issue.issueId, loginAccount, context.settings)
-              else
-                callIssuesWebHook(webHookAction, repository, issue, loginAccount, context.settings)
+              recordActivity(info)
+              Some("reopen") -> info
           }
+          .getOrElse(None -> None)
 
-          // call hooks
-          content foreach { x =>
+        val commentId = (content, action) match {
+          case (None, None) => None
+          case (None, Some(action)) =>
+            Some(createComment(owner, name, userName, issue.issueId, action.capitalize, action))
+          case (Some(content), _) =>
+            val id = Some(
+              createComment(
+                owner,
+                name,
+                userName,
+                issue.issueId,
+                content,
+                action.map(_ + "_comment").getOrElse("comment")
+              )
+            )
+
+            // record comment activity
+            val commentInfo = if (issue.isPullRequest) {
+              PullRequestCommentInfo(owner, name, userName, content, issue.issueId)
+            } else {
+              IssueCommentInfo(owner, name, userName, content, issue.issueId)
+            }
+            recordActivity(commentInfo)
+
+            // extract references and create refer comment
+            createReferComment(owner, name, issue, content, loginAccount)
+
+            id
+        }
+
+        // call web hooks
+        action match {
+          case None =>
+            commentId foreach (callIssueCommentWebHook(repository, issue, _, loginAccount, context.settings))
+          case Some(act) =>
+            val webHookAction = act match {
+              case "close"  => "closed"
+              case "reopen" => "reopened"
+            }
             if (issue.isPullRequest)
-              PluginRegistry().getPullRequestHooks.foreach(_.addedComment(commentId.get, x, issue, repository))
+              callPullRequestWebHook(webHookAction, repository, issue.issueId, loginAccount, context.settings)
             else
-              PluginRegistry().getIssueHooks.foreach(_.addedComment(commentId.get, x, issue, repository))
-          }
-          action foreach {
-            case "close" =>
-              if (issue.isPullRequest)
-                PluginRegistry().getPullRequestHooks.foreach(_.closed(issue, repository))
-              else
-                PluginRegistry().getIssueHooks.foreach(_.closed(issue, repository))
-            case "reopen" =>
-              if (issue.isPullRequest)
-                PluginRegistry().getPullRequestHooks.foreach(_.reopened(issue, repository))
-              else
-                PluginRegistry().getIssueHooks.foreach(_.reopened(issue, repository))
-          }
+              callIssuesWebHook(webHookAction, repository, issue, loginAccount, context.settings)
+        }
 
-          commentId.map(issue -> _)
+        // call hooks
+        content foreach { x =>
+          if (issue.isPullRequest)
+            PluginRegistry().getPullRequestHooks.foreach(_.addedComment(commentId.get, x, issue, repository))
+          else
+            PluginRegistry().getIssueHooks.foreach(_.addedComment(commentId.get, x, issue, repository))
+        }
+        action foreach {
+          case "close" =>
+            if (issue.isPullRequest)
+              PluginRegistry().getPullRequestHooks.foreach(_.closed(issue, repository))
+            else
+              PluginRegistry().getIssueHooks.foreach(_.closed(issue, repository))
+          case "reopen" =>
+            if (issue.isPullRequest)
+              PluginRegistry().getPullRequestHooks.foreach(_.reopened(issue, repository))
+            else
+              PluginRegistry().getIssueHooks.foreach(_.reopened(issue, repository))
+        }
+
+        commentId.map(issue -> _)
       }
     }
   }
 
-  def deleteCommentByApi(repoInfo: RepositoryInfo, comment: IssueComment, issue: Issue)(
-    implicit context: Context,
+  def deleteCommentByApi(repoInfo: RepositoryInfo, comment: IssueComment, issue: Issue)(implicit
+    context: Context,
     s: Session
   ): Option[IssueComment] = context.loginAccount.flatMap { _ =>
     comment.action match {
@@ -161,33 +160,32 @@ trait HandleCommentService {
     content: Option[String]
   )(implicit context: Context, s: Session): Option[(Issue, Int)] = {
     context.loginAccount.flatMap { loginAccount =>
-      defining(repository.owner, repository.name) {
-        case (owner, name) =>
-          val userName = loginAccount.userName
-          content match {
-            case Some(content) =>
-              // Update comment
-              val _commentId = Some(updateComment(issue.issueId, commentId.toInt, content))
-              // Record comment activity
-              val commentInfo = if (issue.isPullRequest) {
-                PullRequestCommentInfo(owner, name, userName, content, issue.issueId)
-              } else {
-                IssueCommentInfo(owner, name, userName, content, issue.issueId)
-              }
-              recordActivity(commentInfo)
-              // extract references and create refer comment
-              createReferComment(owner, name, issue, content, loginAccount)
-              // call web hooks
-              commentId foreach (callIssueCommentWebHook(repository, issue, _, loginAccount, context.settings))
-              // call hooks
-              if (issue.isPullRequest)
-                PluginRegistry().getPullRequestHooks
-                  .foreach(_.updatedComment(commentId.toInt, content, issue, repository))
-              else
-                PluginRegistry().getIssueHooks.foreach(_.updatedComment(commentId.toInt, content, issue, repository))
-              _commentId.map(issue -> _)
-            case _ => None
-          }
+      defining(repository.owner, repository.name) { case (owner, name) =>
+        val userName = loginAccount.userName
+        content match {
+          case Some(content) =>
+            // Update comment
+            val _commentId = Some(updateComment(issue.issueId, commentId.toInt, content))
+            // Record comment activity
+            val commentInfo = if (issue.isPullRequest) {
+              PullRequestCommentInfo(owner, name, userName, content, issue.issueId)
+            } else {
+              IssueCommentInfo(owner, name, userName, content, issue.issueId)
+            }
+            recordActivity(commentInfo)
+            // extract references and create refer comment
+            createReferComment(owner, name, issue, content, loginAccount)
+            // call web hooks
+            commentId foreach (callIssueCommentWebHook(repository, issue, _, loginAccount, context.settings))
+            // call hooks
+            if (issue.isPullRequest)
+              PluginRegistry().getPullRequestHooks
+                .foreach(_.updatedComment(commentId.toInt, content, issue, repository))
+            else
+              PluginRegistry().getIssueHooks.foreach(_.updatedComment(commentId.toInt, content, issue, repository))
+            _commentId.map(issue -> _)
+          case _ => None
+        }
       }
     }
   }

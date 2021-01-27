@@ -266,7 +266,7 @@ object ApiSpecModels {
       committerEmailAddress = account.mailAddress,
       None,
       None
-  )
+    )
 
   val apiCommitListItem = ApiCommitListItem(
     commit = commitInfo(sha1),

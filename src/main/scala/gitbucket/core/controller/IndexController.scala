@@ -237,50 +237,50 @@ trait IndexControllerBase extends ControllerBase {
 
   // TODO Move to RepositoryViewrController?
   get("/:owner/:repository/search")(referrersOnly { repository =>
-    defining(params.getOrElse("q", "").trim, params.getOrElse("type", "code")) {
-      case (query, target) =>
-        val page = try {
+    defining(params.getOrElse("q", "").trim, params.getOrElse("type", "code")) { case (query, target) =>
+      val page =
+        try {
           val i = params.getOrElse("page", "1").toInt
           if (i <= 0) 1 else i
         } catch {
           case e: NumberFormatException => 1
         }
 
-        target.toLowerCase match {
-          case "issues" =>
-            gitbucket.core.search.html.issues(
-              if (query.nonEmpty) searchIssues(repository.owner, repository.name, query, false) else Nil,
-              false,
-              query,
-              page,
-              repository
-            )
+      target.toLowerCase match {
+        case "issues" =>
+          gitbucket.core.search.html.issues(
+            if (query.nonEmpty) searchIssues(repository.owner, repository.name, query, false) else Nil,
+            false,
+            query,
+            page,
+            repository
+          )
 
-          case "pulls" =>
-            gitbucket.core.search.html.issues(
-              if (query.nonEmpty) searchIssues(repository.owner, repository.name, query, true) else Nil,
-              true,
-              query,
-              page,
-              repository
-            )
+        case "pulls" =>
+          gitbucket.core.search.html.issues(
+            if (query.nonEmpty) searchIssues(repository.owner, repository.name, query, true) else Nil,
+            true,
+            query,
+            page,
+            repository
+          )
 
-          case "wiki" =>
-            gitbucket.core.search.html.wiki(
-              if (query.nonEmpty) searchWikiPages(repository.owner, repository.name, query) else Nil,
-              query,
-              page,
-              repository
-            )
+        case "wiki" =>
+          gitbucket.core.search.html.wiki(
+            if (query.nonEmpty) searchWikiPages(repository.owner, repository.name, query) else Nil,
+            query,
+            page,
+            repository
+          )
 
-          case _ =>
-            gitbucket.core.search.html.code(
-              if (query.nonEmpty) searchFiles(repository.owner, repository.name, query) else Nil,
-              query,
-              page,
-              repository
-            )
-        }
+        case _ =>
+          gitbucket.core.search.html.code(
+            if (query.nonEmpty) searchFiles(repository.owner, repository.name, query) else Nil,
+            query,
+            page,
+            repository
+          )
+      }
     }
   })
 

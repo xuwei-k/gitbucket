@@ -205,9 +205,7 @@ trait AccountControllerBase extends AccountManagementControllerBase {
       "events" -> accountWebhookEvents,
       "ctype" -> label("ctype", text()),
       "token" -> optional(trim(label("token", text(maxlength(100)))))
-    )(
-      (url, events, ctype, token) => AccountWebHookForm(url, events, WebHookContentType.valueOf(ctype), token)
-    )
+    )((url, events, ctype, token) => AccountWebHookForm(url, events, WebHookContentType.valueOf(ctype), token))
 
   /**
    * Provides duplication check for web hook url. duplicated from RepositorySettingsController.scala
@@ -330,22 +328,21 @@ trait AccountControllerBase extends AccountManagementControllerBase {
 
   post("/:userName/_edit", editForm)(oneselfOnly { form =>
     val userName = params("userName")
-    getAccountByUserName(userName).map {
-      account =>
-        updateAccount(
-          account.copy(
-            password = form.password.map(pbkdf2_sha256).getOrElse(account.password),
-            fullName = form.fullName,
-            mailAddress = form.mailAddress,
-            description = form.description,
-            url = form.url
-          )
+    getAccountByUserName(userName).map { account =>
+      updateAccount(
+        account.copy(
+          password = form.password.map(pbkdf2_sha256).getOrElse(account.password),
+          fullName = form.fullName,
+          mailAddress = form.mailAddress,
+          description = form.description,
+          url = form.url
         )
+      )
 
-        updateImage(userName, form.fileId, form.clearImage)
-        updateAccountExtraMailAddresses(userName, form.extraMailAddresses.filter(_ != ""))
-        flash.update("info", "Account information has been updated.")
-        redirect(s"/${userName}/_edit")
+      updateImage(userName, form.fileId, form.clearImage)
+      updateAccountExtraMailAddresses(userName, form.extraMailAddresses.filter(_ != ""))
+      flash.update("info", "Account information has been updated.")
+      redirect(s"/${userName}/_edit")
 
     } getOrElse NotFound()
   })
@@ -353,12 +350,11 @@ trait AccountControllerBase extends AccountManagementControllerBase {
   get("/:userName/_delete")(oneselfOnly {
     val userName = params("userName")
 
-    getAccountByUserName(userName, true).map {
-      account =>
-        if (isLastAdministrator(account)) {
-          flash.update("error", "Account can't be removed because this is last one administrator.")
-          redirect(s"/${userName}/_edit")
-        } else {
+    getAccountByUserName(userName, true).map { account =>
+      if (isLastAdministrator(account)) {
+        flash.update("error", "Account can't be removed because this is last one administrator.")
+        redirect(s"/${userName}/_edit")
+      } else {
 //      // Remove repositories
 //      getRepositoryNamesOfUser(userName).foreach { repositoryName =>
 //        deleteRepository(userName, repositoryName)
@@ -366,10 +362,10 @@ trait AccountControllerBase extends AccountManagementControllerBase {
 //        FileUtils.deleteDirectory(getWikiRepositoryDir(userName, repositoryName))
 //        FileUtils.deleteDirectory(getTemporaryDir(userName, repositoryName))
 //      }
-          suspendAccount(account)
-          session.invalidate
-          redirect("/")
-        }
+        suspendAccount(account)
+        session.invalidate
+        redirect("/")
+      }
     } getOrElse NotFound()
   })
 
@@ -515,9 +511,8 @@ trait AccountControllerBase extends AccountManagementControllerBase {
   get("/:userName/_hooks/edit")(managersOnly {
     val userName = params("userName")
     getAccountByUserName(userName).flatMap { account =>
-      getAccountWebHook(userName, params("url")).map {
-        case (webhook, events) =>
-          html.edithook(webhook, events, account, false)
+      getAccountWebHook(userName, params("url")).map { case (webhook, events) =>
+        html.edithook(webhook, events, account, false)
       }
     } getOrElse NotFound()
   })
@@ -574,11 +569,10 @@ trait AccountControllerBase extends AccountManagementControllerBase {
         "url" -> url,
         "request" -> Await.result(
           reqFuture
-            .map(
-              req =>
-                Map(
-                  "headers" -> _headers(req.getAllHeaders),
-                  "payload" -> json
+            .map(req =>
+              Map(
+                "headers" -> _headers(req.getAllHeaders),
+                "payload" -> json
               )
             )
             .recover(toErrorMap),
@@ -586,12 +580,11 @@ trait AccountControllerBase extends AccountManagementControllerBase {
         ),
         "response" -> Await.result(
           resFuture
-            .map(
-              res =>
-                Map(
-                  "status" -> res.getStatusLine(),
-                  "body" -> EntityUtils.toString(res.getEntity()),
-                  "headers" -> _headers(res.getAllHeaders())
+            .map(res =>
+              Map(
+                "status" -> res.getStatusLine(),
+                "body" -> EntityUtils.toString(res.getEntity()),
+                "headers" -> _headers(res.getAllHeaders())
               )
             )
             .recover(toErrorMap),
@@ -658,14 +651,13 @@ trait AccountControllerBase extends AccountManagementControllerBase {
   })
 
   get("/:groupName/_deletegroup")(managersOnly {
-    defining(params("groupName")) {
-      groupName =>
-        // Remove from GROUP_MEMBER
-        updateGroupMembers(groupName, Nil)
-        // Disable group
-        getAccountByUserName(groupName, false).foreach { account =>
-          updateGroup(groupName, account.description, account.url, true)
-        }
+    defining(params("groupName")) { groupName =>
+      // Remove from GROUP_MEMBER
+      updateGroupMembers(groupName, Nil)
+      // Disable group
+      getAccountByUserName(groupName, false).foreach { account =>
+        updateGroup(groupName, account.description, account.url, true)
+      }
 //      // Remove repositories
 //      getRepositoryNamesOfUser(groupName).foreach { repositoryName =>
 //        deleteRepository(groupName, repositoryName)
@@ -688,13 +680,12 @@ trait AccountControllerBase extends AccountManagementControllerBase {
           }
         }
         .toList
-    ) {
-      case (groupName, members) =>
-        getAccountByUserName(groupName, true).map { account =>
-          updateGroup(groupName, form.description, form.url, false)
+    ) { case (groupName, members) =>
+      getAccountByUserName(groupName, true).map { account =>
+        updateGroup(groupName, form.description, form.url, false)
 
-          // Update GROUP_MEMBER
-          updateGroupMembers(form.groupName, members)
+        // Update GROUP_MEMBER
+        updateGroupMembers(form.groupName, members)
 //        // Update COLLABORATOR for group repositories
 //        getRepositoryNamesOfUser(form.groupName).foreach { repositoryName =>
 //          removeCollaborators(form.groupName, repositoryName)
@@ -703,12 +694,12 @@ trait AccountControllerBase extends AccountManagementControllerBase {
 //          }
 //        }
 
-          updateImage(form.groupName, form.fileId, form.clearImage)
+        updateImage(form.groupName, form.fileId, form.clearImage)
 
-          flash.update("info", "Account information has been updated.")
-          redirect(s"/${groupName}/_editgroup")
+        flash.update("info", "Account information has been updated.")
+        redirect(s"/${groupName}/_editgroup")
 
-        } getOrElse NotFound()
+      } getOrElse NotFound()
     }
   })
 
@@ -744,17 +735,18 @@ trait AccountControllerBase extends AccountManagementControllerBase {
 
   get("/:owner/:repository/fork")(readableUsersOnly { repository =>
     val loginAccount = context.loginAccount.get
-    if (repository.repository.options.allowFork && (context.settings.repositoryOperation.fork || loginAccount.isAdmin)) {
+    if (
+      repository.repository.options.allowFork && (context.settings.repositoryOperation.fork || loginAccount.isAdmin)
+    ) {
       val loginUserName = loginAccount.userName
       val groups = getGroupsByUserName(loginUserName)
       groups match {
         case _: List[String] =>
           val managerPermissions = groups.map { group =>
             val members = getGroupMembers(group)
-            context.loginAccount.exists(
-              x =>
-                members.exists { member =>
-                  member.userName == x.userName && member.isManager
+            context.loginAccount.exists(x =>
+              members.exists { member =>
+                member.userName == x.userName && member.isManager
               }
             )
           }
@@ -769,12 +761,16 @@ trait AccountControllerBase extends AccountManagementControllerBase {
 
   post("/:owner/:repository/fork", accountForm)(readableUsersOnly { (form, repository) =>
     val loginAccount = context.loginAccount.get
-    if (repository.repository.options.allowFork && (context.settings.repositoryOperation.fork || loginAccount.isAdmin)) {
+    if (
+      repository.repository.options.allowFork && (context.settings.repositoryOperation.fork || loginAccount.isAdmin)
+    ) {
       val loginUserName = loginAccount.userName
       val accountName = form.accountName
 
-      if (getRepository(accountName, repository.name).isDefined ||
-          (accountName != loginUserName && !getGroupsByUserName(loginUserName).contains(accountName))) {
+      if (
+        getRepository(accountName, repository.name).isDefined ||
+        (accountName != loginUserName && !getGroupsByUserName(loginUserName).contains(accountName))
+      ) {
         // redirect to the repository if repository already exists
         redirect(s"/${accountName}/${repository.name}")
       } else {
@@ -809,9 +805,11 @@ trait AccountControllerBase extends AccountManagementControllerBase {
 
   private def members: Constraint = new Constraint() {
     override def validate(name: String, value: String, messages: Messages): Option[String] = {
-      if (value.split(",").exists {
-            _.split(":") match { case Array(userName, isManager) => isManager.toBoolean }
-          }) None
+      if (
+        value.split(",").exists {
+          _.split(":") match { case Array(userName, isManager) => isManager.toBoolean }
+        }
+      ) None
       else Some("Must select one manager at least.")
     }
   }

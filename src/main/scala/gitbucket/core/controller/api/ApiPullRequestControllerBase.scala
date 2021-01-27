@@ -48,19 +48,18 @@ trait ApiPullRequestControllerBase extends ControllerBase {
         repos = repository.owner -> repository.name
       )
 
-    JsonFormat(issues.map {
-      case (issue, issueUser, commentCount, pullRequest, headRepo, headOwner, assignee) =>
-        ApiPullRequest(
-          issue = issue,
-          pullRequest = pullRequest,
-          headRepo = ApiRepository(headRepo, ApiUser(headOwner)),
-          baseRepo = ApiRepository(repository, ApiUser(baseOwner)),
-          user = ApiUser(issueUser),
-          labels = getIssueLabels(repository.owner, repository.name, issue.issueId)
-            .map(ApiLabel(_, RepositoryName(repository))),
-          assignee = assignee.map(ApiUser.apply),
-          mergedComment = getMergedComment(repository.owner, repository.name, issue.issueId)
-        )
+    JsonFormat(issues.map { case (issue, issueUser, commentCount, pullRequest, headRepo, headOwner, assignee) =>
+      ApiPullRequest(
+        issue = issue,
+        pullRequest = pullRequest,
+        headRepo = ApiRepository(headRepo, ApiUser(headOwner)),
+        baseRepo = ApiRepository(repository, ApiUser(baseOwner)),
+        user = ApiUser(issueUser),
+        labels = getIssueLabels(repository.owner, repository.name, issue.issueId)
+          .map(ApiLabel(_, RepositoryName(repository))),
+        assignee = assignee.map(ApiUser.apply),
+        mergedComment = getMergedComment(repository.owner, repository.name, issue.issueId)
+      )
     })
   })
 
@@ -89,39 +88,38 @@ trait ApiPullRequestControllerBase extends ControllerBase {
         case Left(createPullReq) =>
           val (reqOwner, reqBranch) = parseCompareIdentifier(createPullReq.head, repository.owner)
           getRepository(reqOwner, repository.name)
-            .flatMap {
-              forkedRepository =>
-                getPullRequestCommitFromTo(repository, forkedRepository, createPullReq.base, reqBranch) match {
-                  case (Some(commitIdFrom), Some(commitIdTo)) =>
-                    val issueId = insertIssue(
-                      owner = repository.owner,
-                      repository = repository.name,
-                      loginUser = context.loginAccount.get.userName,
-                      title = createPullReq.title,
-                      content = createPullReq.body,
-                      assignedUserName = None,
-                      milestoneId = None,
-                      priorityId = None,
-                      isPullRequest = true
-                    )
+            .flatMap { forkedRepository =>
+              getPullRequestCommitFromTo(repository, forkedRepository, createPullReq.base, reqBranch) match {
+                case (Some(commitIdFrom), Some(commitIdTo)) =>
+                  val issueId = insertIssue(
+                    owner = repository.owner,
+                    repository = repository.name,
+                    loginUser = context.loginAccount.get.userName,
+                    title = createPullReq.title,
+                    content = createPullReq.body,
+                    assignedUserName = None,
+                    milestoneId = None,
+                    priorityId = None,
+                    isPullRequest = true
+                  )
 
-                    createPullRequest(
-                      originRepository = repository,
-                      issueId = issueId,
-                      originBranch = createPullReq.base,
-                      requestUserName = reqOwner,
-                      requestRepositoryName = repository.name,
-                      requestBranch = reqBranch,
-                      commitIdFrom = commitIdFrom.getName,
-                      commitIdTo = commitIdTo.getName,
-                      isDraft = createPullReq.draft.getOrElse(false),
-                      loginAccount = context.loginAccount.get,
-                      settings = context.settings
-                    )
-                    getApiPullRequest(repository, issueId).map(JsonFormat(_))
-                  case _ =>
-                    None
-                }
+                  createPullRequest(
+                    originRepository = repository,
+                    issueId = issueId,
+                    originBranch = createPullReq.base,
+                    requestUserName = reqOwner,
+                    requestRepositoryName = repository.name,
+                    requestBranch = reqBranch,
+                    commitIdFrom = commitIdFrom.getName,
+                    commitIdTo = commitIdTo.getName,
+                    isDraft = createPullReq.draft.getOrElse(false),
+                    loginAccount = context.loginAccount.get,
+                    settings = context.settings
+                  )
+                  getApiPullRequest(repository, issueId).map(JsonFormat(_))
+                case _ =>
+                  None
+              }
             }
             .getOrElse {
               NotFound()
@@ -129,28 +127,27 @@ trait ApiPullRequestControllerBase extends ControllerBase {
         case Right(createPullReqAlt) =>
           val (reqOwner, reqBranch) = parseCompareIdentifier(createPullReqAlt.head, repository.owner)
           getRepository(reqOwner, repository.name)
-            .flatMap {
-              forkedRepository =>
-                getPullRequestCommitFromTo(repository, forkedRepository, createPullReqAlt.base, reqBranch) match {
-                  case (Some(commitIdFrom), Some(commitIdTo)) =>
-                    changeIssueToPullRequest(repository.owner, repository.name, createPullReqAlt.issue)
-                    createPullRequest(
-                      originRepository = repository,
-                      issueId = createPullReqAlt.issue,
-                      originBranch = createPullReqAlt.base,
-                      requestUserName = reqOwner,
-                      requestRepositoryName = repository.name,
-                      requestBranch = reqBranch,
-                      commitIdFrom = commitIdFrom.getName,
-                      commitIdTo = commitIdTo.getName,
-                      isDraft = false,
-                      loginAccount = context.loginAccount.get,
-                      settings = context.settings
-                    )
-                    getApiPullRequest(repository, createPullReqAlt.issue).map(JsonFormat(_))
-                  case _ =>
-                    None
-                }
+            .flatMap { forkedRepository =>
+              getPullRequestCommitFromTo(repository, forkedRepository, createPullReqAlt.base, reqBranch) match {
+                case (Some(commitIdFrom), Some(commitIdTo)) =>
+                  changeIssueToPullRequest(repository.owner, repository.name, createPullReqAlt.issue)
+                  createPullRequest(
+                    originRepository = repository,
+                    issueId = createPullReqAlt.issue,
+                    originBranch = createPullReqAlt.base,
+                    requestUserName = reqOwner,
+                    requestRepositoryName = repository.name,
+                    requestBranch = reqBranch,
+                    commitIdFrom = commitIdFrom.getName,
+                    commitIdTo = commitIdTo.getName,
+                    isDraft = false,
+                    loginAccount = context.loginAccount.get,
+                    settings = context.settings
+                  )
+                  getApiPullRequest(repository, createPullReqAlt.issue).map(JsonFormat(_))
+                case _ =>
+                  None
+              }
             }
             .getOrElse {
               NotFound()
@@ -191,26 +188,24 @@ trait ApiPullRequestControllerBase extends ControllerBase {
   get("/api/v3/repos/:owner/:repository/pulls/:id/commits")(referrersOnly { repository =>
     val owner = repository.owner
     val name = repository.name
-    params("id").toIntOpt.flatMap {
-      issueId =>
-        getPullRequest(owner, name, issueId) map {
-          case (issue, pullreq) =>
-            Using.resource(Git.open(getRepositoryDir(owner, name))) { git =>
-              val oldId = git.getRepository.resolve(pullreq.commitIdFrom)
-              val newId = git.getRepository.resolve(pullreq.commitIdTo)
-              val repoFullName = RepositoryName(repository)
-              val commits = git.log
-                .addRange(oldId, newId)
-                .call
-                .iterator
-                .asScala
-                .map { c =>
-                  ApiCommitListItem(new CommitInfo(c), repoFullName)
-                }
-                .toList
-              JsonFormat(commits)
+    params("id").toIntOpt.flatMap { issueId =>
+      getPullRequest(owner, name, issueId) map { case (issue, pullreq) =>
+        Using.resource(Git.open(getRepositoryDir(owner, name))) { git =>
+          val oldId = git.getRepository.resolve(pullreq.commitIdFrom)
+          val newId = git.getRepository.resolve(pullreq.commitIdTo)
+          val repoFullName = RepositoryName(repository)
+          val commits = git.log
+            .addRange(oldId, newId)
+            .call
+            .iterator
+            .asScala
+            .map { c =>
+              ApiCommitListItem(new CommitInfo(c), repoFullName)
             }
+            .toList
+          JsonFormat(commits)
         }
+      }
     } getOrElse NotFound()
   })
   /*
@@ -252,7 +247,7 @@ trait ApiPullRequestControllerBase extends ControllerBase {
           JsonFormat(
             FailToMergePrResponse(
               message = "Head branch was modified. Review and try the merge again.",
-              documentation_url = "https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request",
+              documentation_url = "https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request"
             )
           )
         )
@@ -262,7 +257,7 @@ trait ApiPullRequestControllerBase extends ControllerBase {
             JsonFormat(
               FailToMergePrResponse(
                 message = "Pull Request is not mergeable, Closed",
-                documentation_url = "https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request",
+                documentation_url = "https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request"
               )
             )
           )
@@ -294,7 +289,7 @@ trait ApiPullRequestControllerBase extends ControllerBase {
                 JsonFormat(
                   FailToMergePrResponse(
                     message = "Pull Request is not mergeable",
-                    documentation_url = "https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request",
+                    documentation_url = "https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request"
                   )
                 )
               )

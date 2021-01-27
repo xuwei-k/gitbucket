@@ -33,8 +33,8 @@ trait PullRequestService {
     with ActivityService =>
   import PullRequestService._
 
-  def getPullRequest(owner: String, repository: String, issueId: Int)(
-    implicit s: Session
+  def getPullRequest(owner: String, repository: String, issueId: Int)(implicit
+    s: Session
   ): Option[(Issue, PullRequest)] =
     getIssue(owner, repository, issueId.toString).flatMap { issue =>
       PullRequests.filter(_.byPrimaryKey(owner, repository, issueId)).firstOption.map { pullreq =>
@@ -42,24 +42,24 @@ trait PullRequestService {
       }
     }
 
-  def updateCommitId(owner: String, repository: String, issueId: Int, commitIdTo: String, commitIdFrom: String)(
-    implicit s: Session
+  def updateCommitId(owner: String, repository: String, issueId: Int, commitIdTo: String, commitIdFrom: String)(implicit
+    s: Session
   ): Unit =
     PullRequests
       .filter(_.byPrimaryKey(owner, repository, issueId))
       .map(pr => pr.commitIdTo -> pr.commitIdFrom)
       .update((commitIdTo, commitIdFrom))
 
-  def updateDraftToPullRequest(owner: String, repository: String, issueId: Int)(
-    implicit s: Session
+  def updateDraftToPullRequest(owner: String, repository: String, issueId: Int)(implicit
+    s: Session
   ): Unit =
     PullRequests
       .filter(_.byPrimaryKey(owner, repository, issueId))
       .map(pr => pr.isDraft)
       .update(false)
 
-  def updateBaseBranch(owner: String, repository: String, issueId: Int, baseBranch: String, commitIdTo: String)(
-    implicit s: Session
+  def updateBaseBranch(owner: String, repository: String, issueId: Int, baseBranch: String, commitIdTo: String)(implicit
+    s: Session
   ): Unit = {
     PullRequests
       .filter(_.byPrimaryKey(owner, repository, issueId))
@@ -67,19 +67,18 @@ trait PullRequestService {
       .update((baseBranch, commitIdTo))
   }
 
-  def getPullRequestCountGroupByUser(closed: Boolean, owner: Option[String], repository: Option[String])(
-    implicit s: Session
+  def getPullRequestCountGroupByUser(closed: Boolean, owner: Option[String], repository: Option[String])(implicit
+    s: Session
   ): List[PullRequestCount] =
     PullRequests
       .join(Issues)
       .on { (t1, t2) =>
         t1.byPrimaryKey(t2.userName, t2.repositoryName, t2.issueId)
       }
-      .filter {
-        case (t1, t2) =>
-          (t2.closed === closed.bind)
-            .&&(t1.userName === owner.get.bind, owner.isDefined)
-            .&&(t1.repositoryName === repository.get.bind, repository.isDefined)
+      .filter { case (t1, t2) =>
+        (t2.closed === closed.bind)
+          .&&(t1.userName === owner.get.bind, owner.isDefined)
+          .&&(t1.repositoryName === repository.get.bind, repository.isDefined)
       }
       .groupBy { case (t1, t2) => t2.openedUserName }
       .map { case (userName, t) => userName -> t.length }
@@ -181,12 +180,11 @@ trait PullRequestService {
       .on { (t1, t2) =>
         t1.byPrimaryKey(t2.userName, t2.repositoryName, t2.issueId)
       }
-      .filter {
-        case (t1, t2) =>
-          (t1.requestUserName === userName.bind)
-            .&&(t1.requestRepositoryName === repositoryName.bind)
-            .&&(t1.requestBranch === branch.bind)
-            .&&(t2.closed === closed.get.bind, closed.isDefined)
+      .filter { case (t1, t2) =>
+        (t1.requestUserName === userName.bind)
+          .&&(t1.requestRepositoryName === repositoryName.bind)
+          .&&(t1.requestBranch === branch.bind)
+          .&&(t2.closed === closed.get.bind, closed.isDefined)
       }
       .map { case (t1, t2) => t1 }
       .list
@@ -199,12 +197,11 @@ trait PullRequestService {
       .on { (t1, t2) =>
         t1.byPrimaryKey(t2.userName, t2.repositoryName, t2.issueId)
       }
-      .filter {
-        case (t1, t2) =>
-          (t1.requestUserName === userName.bind)
-            .&&(t1.requestRepositoryName === repositoryName.bind)
-            .&&(t1.branch === branch.bind)
-            .&&(t2.closed === closed.get.bind, closed.isDefined)
+      .filter { case (t1, t2) =>
+        (t1.requestUserName === userName.bind)
+          .&&(t1.requestRepositoryName === repositoryName.bind)
+          .&&(t1.branch === branch.bind)
+          .&&(t2.closed === closed.get.bind, closed.isDefined)
       }
       .map { case (t1, t2) => t1 }
       .list
@@ -216,22 +213,21 @@ trait PullRequestService {
    *   2. return if exists pull request to other branch
    * 2. return None
    */
-  def getPullRequestFromBranch(userName: String, repositoryName: String, branch: String, defaultBranch: String)(
-    implicit s: Session
+  def getPullRequestFromBranch(userName: String, repositoryName: String, branch: String, defaultBranch: String)(implicit
+    s: Session
   ): Option[(PullRequest, Issue)] =
     PullRequests
       .join(Issues)
       .on { (t1, t2) =>
         t1.byPrimaryKey(t2.userName, t2.repositoryName, t2.issueId)
       }
-      .filter {
-        case (t1, t2) =>
-          (t1.requestUserName === userName.bind) &&
-            (t1.requestRepositoryName === repositoryName.bind) &&
-            (t1.requestBranch === branch.bind) &&
-            (t1.userName === userName.bind) &&
-            (t1.repositoryName === repositoryName.bind) &&
-            (t2.closed === false.bind)
+      .filter { case (t1, t2) =>
+        (t1.requestUserName === userName.bind) &&
+          (t1.requestRepositoryName === repositoryName.bind) &&
+          (t1.requestBranch === branch.bind) &&
+          (t1.userName === userName.bind) &&
+          (t1.repositoryName === repositoryName.bind) &&
+          (t2.closed === false.bind)
       }
       .sortBy { case (t1, t2) => t1.branch =!= defaultBranch.bind }
       .firstOption
@@ -246,8 +242,8 @@ trait PullRequestService {
     loginAccount: Account,
     action: String,
     settings: SystemSettings
-  )(
-    implicit s: Session,
+  )(implicit
+    s: Session,
     c: JsonFormat.Context
   ): Unit = {
     getPullRequestsByRequest(owner, repository, branch, Some(false)).foreach { pullreq =>
@@ -272,10 +268,9 @@ trait PullRequestService {
               (file, commentId, Left(oldLine))
           }
           .groupBy { case (file, _, _) => file }
-          .map {
-            case (file, comments) =>
-              file ->
-                comments.map { case (_, commentId, lineNumber) => (commentId, lineNumber) }
+          .map { case (file, comments) =>
+            file ->
+              comments.map { case (_, commentId, lineNumber) => (commentId, lineNumber) }
           }
 
         // Update comments position
@@ -311,64 +306,63 @@ trait PullRequestService {
     body: Option[String],
     state: Option[String],
     base: Option[String]
-  )(
-    implicit s: Session,
+  )(implicit
+    s: Session,
     c: JsonFormat.Context
   ): Unit = {
-    getPullRequest(repository.owner, repository.name, issueId).foreach {
-      case (issue, pr) =>
-        if (Repositories.filter(_.byRepository(pr.userName, pr.repositoryName)).exists.run) {
-          // Update base branch
-          base.foreach { _base =>
-            if (pr.branch != _base) {
-              Using.resource(Git.open(getRepositoryDir(repository.owner, repository.name))) { git =>
-                getBranches(git, repository.repository.defaultBranch, origin = true)
-                  .find(_.name == _base)
-                  .foreach(br => updateBaseBranch(repository.owner, repository.name, issueId, br.name, br.commitId))
-              }
-              createComment(
-                repository.owner,
-                repository.name,
-                loginAccount.userName,
-                issue.issueId,
-                pr.branch + "\r\n" + _base,
-                "change_base_branch"
-              )
+    getPullRequest(repository.owner, repository.name, issueId).foreach { case (issue, pr) =>
+      if (Repositories.filter(_.byRepository(pr.userName, pr.repositoryName)).exists.run) {
+        // Update base branch
+        base.foreach { _base =>
+          if (pr.branch != _base) {
+            Using.resource(Git.open(getRepositoryDir(repository.owner, repository.name))) { git =>
+              getBranches(git, repository.repository.defaultBranch, origin = true)
+                .find(_.name == _base)
+                .foreach(br => updateBaseBranch(repository.owner, repository.name, issueId, br.name, br.commitId))
             }
+            createComment(
+              repository.owner,
+              repository.name,
+              loginAccount.userName,
+              issue.issueId,
+              pr.branch + "\r\n" + _base,
+              "change_base_branch"
+            )
           }
-          // Update title and content
-          title.foreach { _title =>
-            updateIssue(repository.owner, repository.name, issueId, _title, body)
-            if (issue.title != _title) {
-              createComment(
-                repository.owner,
-                repository.name,
-                loginAccount.userName,
-                issue.issueId,
-                issue.title + "\r\n" + _title,
-                "change_title"
-              )
-            }
-          }
-          // Update state
-          val action = (state, issue.closed) match {
-            case (Some("open"), true) =>
-              updateClosed(repository.owner, repository.name, issueId, closed = false)
-              "reopened"
-            case (Some("closed"), false) =>
-              updateClosed(repository.owner, repository.name, issueId, closed = true)
-              "closed"
-            case _ => "edited"
-          }
-          // Call web hook
-          callPullRequestWebHookByRequestBranch(
-            action,
-            getRepository(repository.owner, repository.name).get,
-            pr.requestBranch,
-            loginAccount,
-            settings
-          )
         }
+        // Update title and content
+        title.foreach { _title =>
+          updateIssue(repository.owner, repository.name, issueId, _title, body)
+          if (issue.title != _title) {
+            createComment(
+              repository.owner,
+              repository.name,
+              loginAccount.userName,
+              issue.issueId,
+              issue.title + "\r\n" + _title,
+              "change_title"
+            )
+          }
+        }
+        // Update state
+        val action = (state, issue.closed) match {
+          case (Some("open"), true) =>
+            updateClosed(repository.owner, repository.name, issueId, closed = false)
+            "reopened"
+          case (Some("closed"), false) =>
+            updateClosed(repository.owner, repository.name, issueId, closed = true)
+            "closed"
+          case _ => "edited"
+        }
+        // Call web hook
+        callPullRequestWebHookByRequestBranch(
+          action,
+          getRepository(repository.owner, repository.name).get,
+          pr.requestBranch,
+          loginAccount,
+          settings
+        )
+      }
     }
   }
 
@@ -387,15 +381,14 @@ trait PullRequestService {
         .on { (t1, t2) =>
           t1.byPrimaryKey(t2.userName, t2.repositoryName, t2.issueId)
         }
-        .filter {
-          case (t1, t2) =>
-            (t1.userName === userName.bind) &&
-              (t1.repositoryName === repositoryName.bind) &&
-              (t1.branch === toBranch.bind) &&
-              (t1.requestUserName === userName.bind) &&
-              (t1.requestRepositoryName === repositoryName.bind) &&
-              (t1.requestBranch === fromBranch.bind) &&
-              (t1.commitIdTo === commitId.bind)
+        .filter { case (t1, t2) =>
+          (t1.userName === userName.bind) &&
+            (t1.repositoryName === repositoryName.bind) &&
+            (t1.branch === toBranch.bind) &&
+            (t1.requestUserName === userName.bind) &&
+            (t1.requestRepositoryName === repositoryName.bind) &&
+            (t1.requestBranch === fromBranch.bind) &&
+            (t1.commitIdTo === commitId.bind)
         }
         .firstOption
     }
@@ -411,62 +404,60 @@ trait PullRequestService {
 
     val (_, diffs) = getRequestCompareInfo(userName, repositoryName, oldCommitId, userName, repositoryName, newCommitId)
 
-    val patchs = positions.map {
-      case (file, _) =>
-        diffs
-          .find(x => x.oldPath == file)
-          .map { diff =>
-            (diff.oldContent, diff.newContent) match {
-              case (Some(oldContent), Some(newContent)) => {
-                val oldLines = convertLineSeparator(oldContent, "LF").split("\n")
-                val newLines = convertLineSeparator(newContent, "LF").split("\n")
-                file -> Option(DiffUtils.diff(oldLines.toList.asJava, newLines.toList.asJava))
-              }
-              case _ =>
-                file -> None
+    val patchs = positions.map { case (file, _) =>
+      diffs
+        .find(x => x.oldPath == file)
+        .map { diff =>
+          (diff.oldContent, diff.newContent) match {
+            case (Some(oldContent), Some(newContent)) => {
+              val oldLines = convertLineSeparator(oldContent, "LF").split("\n")
+              val newLines = convertLineSeparator(newContent, "LF").split("\n")
+              file -> Option(DiffUtils.diff(oldLines.toList.asJava, newLines.toList.asJava))
             }
+            case _ =>
+              file -> None
           }
-          .getOrElse {
-            file -> None
-          }
+        }
+        .getOrElse {
+          file -> None
+        }
     }
 
-    positions.foreach {
-      case (file, comments) =>
-        patchs(file) match {
-          case Some(patch) =>
-            file -> comments.foreach {
-              case (commentId, lineNumber) =>
-                lineNumber match {
-                  case Left(oldLine) => updateCommitCommentPosition(commentId, newCommitId, Some(oldLine), None)
-                  case Right(newLine) =>
-                    var counter = newLine
-                    patch.getDeltas.asScala.filter(_.getOriginal.getPosition < newLine).foreach { delta =>
-                      delta.getType match {
-                        case Delta.TYPE.CHANGE =>
-                          if (delta.getOriginal.getPosition <= newLine - 1 && newLine <= delta.getOriginal.getPosition + delta.getRevised.getLines.size) {
-                            counter = -1
-                          } else {
-                            counter = counter + (delta.getRevised.getLines.size - delta.getOriginal.getLines.size)
-                          }
-                        case Delta.TYPE.INSERT => counter = counter + delta.getRevised.getLines.size
-                        case Delta.TYPE.DELETE => counter = counter - delta.getOriginal.getLines.size
+    positions.foreach { case (file, comments) =>
+      patchs(file) match {
+        case Some(patch) =>
+          file -> comments.foreach { case (commentId, lineNumber) =>
+            lineNumber match {
+              case Left(oldLine) => updateCommitCommentPosition(commentId, newCommitId, Some(oldLine), None)
+              case Right(newLine) =>
+                var counter = newLine
+                patch.getDeltas.asScala.filter(_.getOriginal.getPosition < newLine).foreach { delta =>
+                  delta.getType match {
+                    case Delta.TYPE.CHANGE =>
+                      if (
+                        delta.getOriginal.getPosition <= newLine - 1 && newLine <= delta.getOriginal.getPosition + delta.getRevised.getLines.size
+                      ) {
+                        counter = -1
+                      } else {
+                        counter = counter + (delta.getRevised.getLines.size - delta.getOriginal.getLines.size)
                       }
-                    }
-                    if (counter >= 0) {
-                      updateCommitCommentPosition(commentId, newCommitId, None, Some(counter))
-                    }
+                    case Delta.TYPE.INSERT => counter = counter + delta.getRevised.getLines.size
+                    case Delta.TYPE.DELETE => counter = counter - delta.getOriginal.getLines.size
+                  }
+                }
+                if (counter >= 0) {
+                  updateCommitCommentPosition(commentId, newCommitId, None, Some(counter))
                 }
             }
-          case _ =>
-            comments.foreach {
-              case (commentId, lineNumber) =>
-                lineNumber match {
-                  case Right(oldLine) => updateCommitCommentPosition(commentId, newCommitId, Some(oldLine), None)
-                  case Left(newLine)  => updateCommitCommentPosition(commentId, newCommitId, None, Some(newLine))
-                }
+          }
+        case _ =>
+          comments.foreach { case (commentId, lineNumber) =>
+            lineNumber match {
+              case Right(oldLine) => updateCommitCommentPosition(commentId, newCommitId, Some(oldLine), None)
+              case Left(newLine)  => updateCommitCommentPosition(commentId, newCommitId, None, Some(newLine))
             }
-        }
+          }
+      }
     }
   }
 
@@ -504,8 +495,8 @@ trait PullRequestService {
       (commits, diffs)
     }
 
-  def getPullRequestComments(userName: String, repositoryName: String, issueId: Int, commits: Seq[CommitInfo])(
-    implicit s: Session
+  def getPullRequestComments(userName: String, repositoryName: String, issueId: Int, commits: Seq[CommitInfo])(implicit
+    s: Session
   ): Seq[Comment] = {
     (commits
       .map(commit => getCommitComments(userName, repositoryName, commit.id, true))
@@ -541,8 +532,8 @@ trait PullRequestService {
       .sortWith(_.registeredDate before _.registeredDate)
   }
 
-  def markMergeAndClosePullRequest(userName: String, owner: String, repository: String, pull: PullRequest)(
-    implicit s: Session
+  def markMergeAndClosePullRequest(userName: String, owner: String, repository: String, pull: PullRequest)(implicit
+    s: Session
   ): Unit = {
     createComment(owner, repository, userName, pull.issueId, "Merged by user", "merge")
     createComment(owner, repository, userName, pull.issueId, "Close", "close")
@@ -572,33 +563,32 @@ trait PullRequestService {
     Using.resources(
       Git.open(getRepositoryDir(originRepository.owner, originRepository.name)),
       Git.open(getRepositoryDir(forkedRepository.owner, forkedRepository.name))
-    ) {
-      case (oldGit, newGit) =>
-        if (originRepository.branchList.contains(originId)) {
-          val forkedId2 =
-            forkedRepository.tags.collectFirst { case x if x.name == forkedId => x.id }.getOrElse(forkedId)
+    ) { case (oldGit, newGit) =>
+      if (originRepository.branchList.contains(originId)) {
+        val forkedId2 =
+          forkedRepository.tags.collectFirst { case x if x.name == forkedId => x.id }.getOrElse(forkedId)
 
-          val originId2 = JGitUtil.getForkedCommitId(
-            oldGit,
-            newGit,
-            originRepository.owner,
-            originRepository.name,
-            originId,
-            forkedRepository.owner,
-            forkedRepository.name,
-            forkedId2
-          )
+        val originId2 = JGitUtil.getForkedCommitId(
+          oldGit,
+          newGit,
+          originRepository.owner,
+          originRepository.name,
+          originId,
+          forkedRepository.owner,
+          forkedRepository.name,
+          forkedId2
+        )
 
-          (Option(oldGit.getRepository.resolve(originId2)), Option(newGit.getRepository.resolve(forkedId2)))
+        (Option(oldGit.getRepository.resolve(originId2)), Option(newGit.getRepository.resolve(forkedId2)))
 
-        } else {
-          val originId2 =
-            originRepository.tags.collectFirst { case x if x.name == originId => x.id }.getOrElse(originId)
-          val forkedId2 =
-            forkedRepository.tags.collectFirst { case x if x.name == forkedId => x.id }.getOrElse(forkedId)
+      } else {
+        val originId2 =
+          originRepository.tags.collectFirst { case x if x.name == originId => x.id }.getOrElse(originId)
+        val forkedId2 =
+          forkedRepository.tags.collectFirst { case x if x.name == forkedId => x.id }.getOrElse(forkedId)
 
-          (Option(oldGit.getRepository.resolve(originId2)), Option(newGit.getRepository.resolve(forkedId2)))
-        }
+        (Option(oldGit.getRepository.resolve(originId2)), Option(newGit.getRepository.resolve(forkedId2)))
+      }
     }
   }
 }
@@ -624,8 +614,8 @@ object PullRequestService {
     val statuses: List[CommitStatus] =
       commitStatuses ++ (branchProtection.contexts.toSet -- commitStatuses.map(_.context).toSet)
         .map(CommitStatus.pending(branchProtection.owner, branchProtection.repository, _))
-    val hasRequiredStatusProblem = needStatusCheck && branchProtection.contexts.exists(
-      context => statuses.find(_.context == context).map(_.state) != Some(CommitState.SUCCESS)
+    val hasRequiredStatusProblem = needStatusCheck && branchProtection.contexts.exists(context =>
+      statuses.find(_.context == context).map(_.state) != Some(CommitState.SUCCESS)
     )
     val hasProblem = hasRequiredStatusProblem || hasConflict || (statuses.nonEmpty && CommitState.combine(
       statuses.map(_.state).toSet
