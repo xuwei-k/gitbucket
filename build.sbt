@@ -17,7 +17,7 @@ sourcesInBase := false
 organization := Organization
 name := Name
 version := GitBucketVersion
-scalaVersion := "2.13.5"
+scalaVersion := "3.0.0-RC1"
 
 scalafmtOnCompile := true
 
@@ -119,6 +119,14 @@ libraryDependencies ++= Seq(
   "org.eclipse.jetty" % "jetty-servlet"      % JettyVersion % "executable",
   "org.eclipse.jetty" % "jetty-io"           % JettyVersion % "executable",
   "org.eclipse.jetty" % "jetty-util"         % JettyVersion % "executable"
+)
+
+libraryDependencies := libraryDependencies.value.map(_ withDottyCompat scalaVersion.value)
+scalacOptions ++= Seq(
+  "-Xignore-scala2-macros",
+  "-no-indent",
+  "-source",
+  "3.0-migration",
 )
 
 // Run package task before test to generate target/webapp for integration test
