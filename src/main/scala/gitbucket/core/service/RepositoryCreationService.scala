@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import gitbucket.core.model.Profile.profile.blockingApi.*
 import gitbucket.core.model.activity.{CreateRepositoryInfo, ForkInfo}
 import gitbucket.core.util.Directory.*
+import gitbucket.core.util.Implicits._
 import gitbucket.core.util.{FileUtil, JGitUtil, LockUtil}
 import gitbucket.core.model.{Account, Role}
 import gitbucket.core.plugin.PluginRegistry

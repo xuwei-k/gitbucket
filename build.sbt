@@ -15,9 +15,11 @@ sourcesInBase := false
 organization := Organization
 name := Name
 version := GitBucketVersion
-scalaVersion := "2.13.14"
+scalaVersion := "3.4.2"
 
 crossScalaVersions += "3.4.2"
+
+scalacOptions += "-source:3.0-migration"
 
 // scalafmtOnCompile := true
 
@@ -71,7 +73,7 @@ libraryDependencies ++= Seq(
 )
 
 // Compiler settings
-scalacOptions := Seq(
+scalacOptions ++= Seq(
   "-deprecation",
   "-language:postfixOps",
   "-opt:l:method",
