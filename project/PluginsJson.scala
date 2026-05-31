@@ -1,5 +1,5 @@
 import com.eclipsesource.json.Json
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object PluginsJson {
 
@@ -9,7 +9,7 @@ object PluginsJson {
       val pluginObject = plugin.asObject
       val latestVersionObject = pluginObject.get("versions").asArray.asScala.head.asObject
       latestVersionObject.get("url").asString
-    }
+    }.toSeq
   }
 
 }

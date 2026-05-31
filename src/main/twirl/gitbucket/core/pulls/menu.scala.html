@@ -39,7 +39,7 @@
       </div>
       <div style="margin-bottom: 15px">
       @if(issue.closed) {
-        @comments.flatMap @{
+        @{comments.flatMap{
           case comment: IssueComment => Some(comment)
           case _ => None
         }.find(_.action == "merge").map { comment =>
@@ -59,7 +59,7 @@
             into <code><a href="@helpers.basePRBranchUrl(pullreq)">@pullreq.userName:@pullreq.branch</a></code>
             from <code><a href="@helpers.requestPRBranchUrl(pullreq)">@pullreq.requestUserName:@pullreq.requestBranch</a></code>
           </span>
-        }
+        }}
       } else {
         <span class="label label-success issue-status">Open</span>
         <span class="muted">

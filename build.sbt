@@ -8,7 +8,7 @@ val JettyVersion = "10.0.26"
 val JgitVersion = "6.10.1.202505221210-r"
 
 lazy val root = (project in file("."))
-  .enablePlugins(SbtTwirl, ContainerPlugin)
+  .enablePlugins(SbtTwirl, SbtWar)
 
 sourcesInBase := false
 organization := Organization
@@ -90,7 +90,6 @@ scalacOptions ++= {
   }
 }
 compile / javacOptions ++= Seq("-target", "11", "-source", "11")
-Container / javaOptions += "-Dlogback.configurationFile=/logback-dev.xml"
 
 // Test settings
 //testOptions in Test += Tests.Argument("-l", "ExternalDBTest")
@@ -102,7 +101,7 @@ Test / fork := true
 packageOptions += Package.MainClass("JettyLauncher")
 
 // Assembly settings
-assembly / test := {}
+assembly / testFull := Def.uncached(TestResult.Empty)
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) =>
     xs.map(_.toLowerCase) match {
@@ -113,8 +112,9 @@ assembly / assemblyMergeStrategy := {
 }
 
 // Exclude a war file from published artifacts
-signedArtifacts := {
-  signedArtifacts.value.filterNot { case (_, file) =>
+signedArtifacts := Def.uncached {
+  signedArtifacts.value.filterNot { case (_, f) =>
+    val file = fileConverter.value.toPath(f).toFile
     file.getName.endsWith(".war") || file.getName.endsWith(".war.asc")
   }
 }
@@ -134,11 +134,12 @@ libraryDependencies ++= Seq(
 )
 
 // Run package task before test to generate target/webapp for integration test
-Test / test := {
+Test / testFull := Def.uncached {
   _root_.sbt.Keys.`package`.value
-  (Test / test).value
+  (Test / testFull).value
 }
 
+@transient
 val executableKey = TaskKey[File]("executable")
 executableKey := {
   import java.util.jar.Attributes.{Name => AttrName}
@@ -165,7 +166,7 @@ executableKey := {
   }
 
   // include original war file
-  val warFile = (Keys.`package`).value
+  val warFile = fileConverter.value.toPath((Keys.`package`).value).toFile
   IO.unzip(warFile, temp)
 
   // include launcher classes
@@ -284,13 +285,3 @@ Test / testOptions ++= {
     Nil
   }
 }
-
-Container / javaOptions ++= Seq(
-  "-Dlogback.configurationFile=/logback-dev.xml",
-  "-Xdebug",
-  "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000",
-  "-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF",
-  // "-Ddev-features=keep-session"
-)
-Container / containerLibs := Seq(("org.eclipse.jetty" % "jetty-runner" % JettyVersion).intransitive())
-Container / containerMain := "org.eclipse.jetty.runner.Runner"
